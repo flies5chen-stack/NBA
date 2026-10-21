@@ -218,11 +218,17 @@
 
         loadingMsg.innerText = `正在連線 Google 檢索雙方 28 位球員的美東時間賽程與最新傷病 (${todayStr})...`;
 
-        const prompt = `
+                const prompt = `
 你是一位精通 Yahoo Fantasy Basketball (H2H 類別對抗) 的頂級數據分析與排陣教練。
 【目前基準日期】：今天是 ${todayStr}（2026-2027 球季）。
 【時間與賽程標準】：必須嚴格以「美東時間 (EST) 週一至週日 (Monday ~ Sunday)」為準，符合 Yahoo Fantasy 週對戰時區。
-【過濾規則】：傷病情報嚴格以近兩週最新消息為準，過期舊聞一律忽略。
+
+【賽程唯一權威基準網站 (重要)】：
+本週所有 NBA 球隊的出賽日程與場次數，**請嚴格指定檢索並參考以下權威賽程網站**：
+👉 https://hashtagbasketball.com/advanced-nba-schedule-grid
+（請鎖定該網站提供的本週 Advanced NBA Schedule Grid 矩陣，所有球隊的比賽天數、對手、場次加總皆以此站為準，避免因不同來源導致場次不一致！）
+
+【傷病過濾規則】：傷病情報請連線檢索 Rotowire / NBA Official 近兩週最新消息，過期舊聞一律忽略。
 
 【聯盟真實規則與 14-Cat 比項設定】：
 1. 陣容設定：每隊 14 人。每天先發位置上限為 11 人（PG, SG, G, SF, PF, F, C, C, UTIL, UTIL, UTIL），剩餘 3 人放板凳（Bench），不計入當日數據。
@@ -246,7 +252,7 @@ ${oppTeam.roster.join('\n')}
 - 提醒我方今天/本週哪些傷兵「切勿擺進 11 人先發席位」，直接放板凳或 IL。
 
 ### 二、 📅【${myTeam.name}（我方）11人先發/3板凳 賽程矩陣表格】
-以美東時間週一到週日呈現 14 人比賽安排：
+以美東時間週一到週日呈現 14 人比賽安排（依 Hashtag Basketball 賽程）：
 | 球員名稱 | 所屬隊伍 | 週一(Mon) | 週二(Tue) | 週三(Wed) | 週四(Thu) | 週五(Fri) | 週六(Sat) | 週日(Sun) | 個人總場次 | 傷病/調度備註 |
 （註：有比賽請填寫 "✓" 或對手如 "@BOS"，無比賽填 "-"）
 
@@ -266,12 +272,13 @@ ${oppTeam.roster.join('\n')}
 1. **有效出場人次對比**：我方有效場次 vs 對手有效場次，總差距是多少場？
 2. **爆滿日 (Heavy Days) 的 3 人板凳選拔建議**：
    - 針對超過 11 人出賽的爆滿日，我方應將哪 3 位球員放板凳？
-   - 提示：如何依照 14-Cat（例如保住 FG%/FT%/A/T 命中率，或追求 PTS/REB/3PTM/ST 累積量）來取捨先發？
+   - 提示：如何依照 14-Cat（例如保住命中率或衝累積數據）來取捨先發？
 3. **少賽日 (Quality Days) 優勢**：指出雙方哪幾天人數 <= 11人，所有人皆可直接先發吃滿數據。
-4. **14 項數據預期勝負**：評估在雙方有效場次與陣容特性下，我方有望在哪些項目取勝（目標拿下至少 8 個項目勝出）。
+4. **14 項數據預期勝負**：評估在雙方有效場次與陣容特性下，我方有望在哪些項目取勝。
 
 請以繁體中文與清晰、工整的 Markdown 格式呈現。
 `;
+
 
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${key}`;
 
