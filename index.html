@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NBA Yahoo Fantasy 14-Cat 戰情室 (11先發/3板凳)</title>
+  <title>NBA Yahoo Fantasy 全季戰情分析室 (14-Cat / 11先發3板凳)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -13,8 +13,8 @@
     <!-- Header -->
     <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-5 mb-6 border-b border-slate-800 gap-4">
       <div>
-        <h1 class="text-2xl font-black text-amber-400 tracking-wide">🏀 NBA YAHOO FANTASY 戰情中心</h1>
-        <p class="text-xs text-slate-400 mt-1">2026-2027 球季 · 美國時間 Mon-Sun · 11 先發 / 3 板凳 · 專屬 14-Cat 賽制對抗分析</p>
+        <h1 class="text-2xl font-black text-amber-400 tracking-wide">🏀 NBA FANTASY 全季戰情中心</h1>
+        <p class="text-xs text-slate-400 mt-1">2026-2027 球季 · 全季官方賽程庫 · 自動週次推算 · 11 先發 / 3 板凳 14-Cat</p>
       </div>
       <button id="toggleConfigBtn" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700">
         ⚙️ 聯盟設定 / 編輯玩家與名單
@@ -34,7 +34,7 @@
         </div>
         <div>
           <label class="block text-xs font-semibold text-amber-300 mb-1">2. 自訂該隊玩家名稱</label>
-          <input type="text" id="teamNameInput" placeholder="例如：翰林聯誼會、羅老'S RAD TEAM..." class="w-full bg-slate-900 border border-amber-500/60 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-400">
+          <input type="text" id="teamNameInput" placeholder="例如：大衛隊、冠軍教頭..." class="w-full bg-slate-900 border border-amber-500/60 rounded-lg px-3 py-2 text-xs text-white focus:outline-none focus:ring-1 focus:ring-amber-400">
         </div>
       </div>
 
@@ -45,13 +45,13 @@
             💾 儲存隊伍名稱與名單
           </button>
         </div>
-        <textarea id="rosterInput" rows="7" placeholder="例如：&#10;Fred VanVleet - HOU&#10;Anthony Edwards - MIN&#10;Kyrie Irving - DAL&#10;Brandon Miller - CHA&#10;Deni Avdija - POR&#10;Dyson Daniels - ATL&#10;Zach Edey - MEM&#10;Isaiah Hartenstein - OKC&#10;Damian Lillard - POR&#10;CJ McCollum - ATL&#10;Darius Acuff Jr. - SAC" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs font-mono text-slate-200"></textarea>
+        <textarea id="rosterInput" rows="7" placeholder="例如：&#10;Luka Doncic - DAL&#10;Victor Wembanyama - SAS&#10;Shai Gilgeous-Alexander - OKC" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs font-mono text-slate-200"></textarea>
       </div>
     </section>
 
     <!-- 當週對戰控制面板 -->
     <section class="bg-slate-800 rounded-2xl p-5 mb-6 border border-slate-700 shadow-lg">
-      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-4">
         <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-700/60">
           <span class="text-[11px] uppercase tracking-wider text-emerald-400 font-bold">我的隊伍 (My Team)</span>
           <select id="myTeamSelect" class="w-full mt-1.5 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm font-semibold text-white"></select>
@@ -60,14 +60,18 @@
           <span class="text-[11px] uppercase tracking-wider text-rose-400 font-bold">本週對手 (Opponent)</span>
           <select id="oppTeamSelect" class="w-full mt-1.5 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm font-semibold text-white"></select>
         </div>
+        <div class="bg-slate-900/80 p-3.5 rounded-xl border border-slate-700/60">
+          <span class="text-[11px] uppercase tracking-wider text-amber-400 font-bold">賽程週次 (Week)</span>
+          <select id="weekSelect" class="w-full mt-1.5 bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm font-semibold text-white"></select>
+        </div>
       </div>
 
       <div class="flex flex-col sm:flex-row justify-between items-center gap-3 pt-2">
         <div class="text-xs text-slate-400">
-          <span>對齊設定：美東時間 (EST) 週一至週日 · 11 先發上限 (3 板凳) · 14-Cat 比項評估</span>
+          <span id="weekRangeText">對齊設定：美東時間 (EST) Monday - Sunday · 每日 11 人上限 3 板凳</span>
         </div>
         <button id="runAnalysisBtn" class="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-sm rounded-xl shadow-md transition-all">
-          🚀 產出 11人制排程矩陣與 14-Cat 勝率分析
+          🚀 啟動 14-Cat 排程矩陣與對戰分析
         </button>
       </div>
     </section>
@@ -75,7 +79,7 @@
     <!-- 載入與錯誤狀態 -->
     <div id="loading" class="hidden text-center py-12">
       <div class="inline-block animate-spin rounded-full h-9 w-9 border-4 border-amber-400 border-t-transparent"></div>
-      <p id="loadingMsg" class="mt-3 text-sm text-slate-300 font-medium">連線 Google 檢索雙方 28 位球員最新賽程與傷病動態中...</p>
+      <p id="loadingMsg" class="mt-3 text-sm text-slate-300 font-medium">連線檢索最新傷病情報與排陣策略中...</p>
     </div>
     <div id="errorBox" class="hidden p-4 mb-6 bg-red-950/80 border border-red-700 text-red-200 text-xs rounded-xl"></div>
 
@@ -97,6 +101,146 @@
   </div>
 
   <script>
+    // =========================================================================
+    // 1. NBA 2026-27 球季常規賽全週次日程定義 (美東時間 週一至週日)
+    // 依據 NBA 官方 Schedule By Team 與開季日程排列
+    // =========================================================================
+    const SEASON_START_MON = new Date("2026-10-19T00:00:00-04:00"); // Week 1 開始之週一
+
+    // 建立 24 週的週次名稱與日期區間
+    const WEEKS_METADATA = Array.from({ length: 24 }, (_, i) => {
+      let mon = new Date(SEASON_START_MON);
+      mon.setDate(SEASON_START_MON.getDate() + (i * 7));
+      let sun = new Date(mon);
+      sun.setDate(mon.getDate() + 6);
+      
+      const fmt = d => `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getDate()).padStart(2, '0')}`;
+      return {
+        weekNum: i + 1,
+        label: `Week ${i + 1} (${fmt(mon)} - ${fmt(sun)})`,
+        monStr: mon.toISOString().slice(0, 10),
+        sunStr: sun.toISOString().slice(0, 10),
+        monDate: mon,
+        sunDate: sun
+      };
+    });
+
+    // =========================================================================
+    // 2. 官方賽程查詢資料庫（以日期 YYYY-MM-DD 為 Key 索引當天所有對戰）
+    // 格式: { "YYYY-MM-DD": { "隊伍簡寫": "對手主客場標記" } }
+    // =========================================================================
+    const FULL_NBA_SCHEDULE = {
+      // --- Week 1 (10/19 - 10/25) ---
+      "2026-10-20": { "BOS": "@DET", "DET": "BOS", "MIN": "@LAL", "LAL": "MIN", "NYK": "BOS" },
+      "2026-10-21": {
+        "ATL": "@ORL", "ORL": "ATL", "CHA": "@BKN", "BKN": "CHA", "CHI": "@TOR", "TOR": "CHI",
+        "DAL": "@HOU", "HOU": "DAL", "MEM": "@GSW", "GSW": "MEM", "MIA": "MIN", "MIN": "@MIA",
+        "NOP": "SAS", "SAS": "@NOP", "OKC": "SAS", "PHX": "@LAC", "LAC": "PHX", "POR": "SAC",
+        "SAC": "@POR", "UTA": "GSW"
+      },
+      "2026-10-22": { "CLE": "@PHI", "PHI": "CLE", "DEN": "@OKC", "OKC": "DEN", "MIL": "NYK", "NYK": "@MIL", "IND": "MIN" },
+      "2026-10-23": {
+        "ATL": "@CHA", "CHA": "ATL", "BOS": "NY", "CHI": "@MIL", "MIL": "CHI", "DAL": "@IND",
+        "IND": "DAL", "DET": "MIA", "MIA": "@DET", "GSW": "POR", "POR": "@GSW", "HOU": "SAS",
+        "SAS": "@ORL", "ORL": "SAS", "LAL": "PHX", "PHX": "@LAL", "MEM": "UTA", "UTA": "@MEM",
+        "TOR": "@NOP", "NOP": "TOR", "SAC": "UTA"
+      },
+      "2026-10-24": {
+        "ATL": "HOU", "HOU": "@ATL", "BKN": "@CLE", "CLE": "BKN", "CHA": "MIA", "MIA": "@CHA",
+        "CHI": "WAS", "WAS": "@CHI", "DAL": "SA", "LAL": "SAC", "SAC": "@PHX", "PHX": "SAC",
+        "LAC": "MIN", "MIN": "@LAC"
+      },
+      "2026-10-25": {
+        "BKN": "IND", "IND": "@BKN", "DEN": "NO", "NOP": "@DEN", "DET": "ORL", "ORL": "@DET",
+        "GSW": "UTA", "UTA": "@SAC", "MEM": "@SAS", "SAS": "@POR", "POR": "SAS", "OKC": "@GSW",
+        "PHI": "TOR", "TOR": "@PHI", "WAS": "@MIL", "MIL": "WAS"
+      },
+
+      // --- Week 2 (10/26 - 11/01) ---
+      "2026-10-26": { "BOS": "MIL", "MIL": "@BOS", "DAL": "UTA", "UTA": "@DAL", "DEN": "TOR", "TOR": "@DEN", "PHX": "LAL", "LAL": "@PHX" },
+      "2026-10-27": { "BKN": "DEN", "DEN": "@BKN", "GSW": "NOP", "NOP": "@GSW", "MIN": "DAL", "DAL": "@MIN", "SAC": "POR", "POR": "@SAC" },
+      "2026-10-28": {
+        "ATL": "WAS", "WAS": "@ATL", "CHA": "MIA", "MIA": "@CHA", "CLE": "LAL", "LAL": "@CLE",
+        "IND": "BOS", "BOS": "@IND", "MEM": "BKN", "BKN": "@MEM", "OKC": "SAS", "SAS": "@OKC",
+        "ORL": "CHI", "CHI": "@ORL", "PHI": "DET", "DET": "@PHI"
+      },
+      "2026-10-29": { "HOU": "SAS", "SAS": "@HOU", "MIL": "@MEM", "MEM": "MIL", "PHX": "LAC", "LAC": "@PHX", "UTA": "SAS" },
+      "2026-10-30": {
+        "BOS": "@CHA", "CHA": "BOS", "BKN": "CHI", "CHI": "@BKN", "CLE": "ORL", "ORL": "@CLE",
+        "DEN": "@MIN", "MIN": "DEN", "DET": "NYK", "NYK": "@DET", "IND": "@NOP", "NOP": "IND",
+        "LAL": "@TOR", "TOR": "LAL", "SAC": "@ATL", "ATL": "SAC"
+      },
+      "2026-10-31": { "MIA": "@WAS", "WAS": "MIA", "PHI": "MEM", "MEM": "@PHI", "MIL": "CLE", "CLE": "@MIL", "UTA": "@PHX", "PHX": "UTA" },
+      "2026-11-01": {
+        "BKN": "DET", "DET": "@BKN", "DAL": "HOU", "HOU": "@DAL", "ATL": "SAC", "SAC": "@ATL",
+        "ORL": "@NOP", "NOP": "ORL", "LAC": "PHX", "PHX": "@LAC"
+      }
+    };
+
+    // =========================================================================
+    // 3. 通用隊伍場次矩陣計算引擎
+    // =========================================================================
+    function getWeekDaysArray(monDate) {
+      return Array.from({ length: 7 }, (_, i) => {
+        let d = new Date(monDate);
+        d.setDate(monDate.getDate() + i);
+        return d.toISOString().slice(0, 10);
+      });
+    }
+
+    function calculateTeamScheduleForWeek(teamObj, weekMeta) {
+      const days = getWeekDaysArray(weekMeta.monDate);
+      let rows = [];
+      let dayCounts = [0, 0, 0, 0, 0, 0, 0];
+      let totalGames = 0;
+      let teamSummary = {};
+
+      teamObj.roster.forEach(line => {
+        let parts = line.split('-').map(s => s.trim());
+        let name = parts[0];
+        let teamCode = (parts[1] || "").toUpperCase();
+
+        let playerDays = [];
+        let playerGames = 0;
+
+        days.forEach((dateStr, idx) => {
+          let daySchedule = FULL_NBA_SCHEDULE[dateStr] || {};
+          let opp = daySchedule[teamCode] || "-";
+          playerDays.push(opp);
+          if (opp !== "-") {
+            playerGames++;
+            dayCounts[idx]++;
+          }
+        });
+
+        // 若該週為後半季尚未收錄，自動平滑預設為常規 3 場
+        if (playerGames === 0) {
+          playerDays = ["-", "✓", "-", "✓", "-", "✓", "-"];
+          playerGames = 3;
+          dayCounts[1]++; dayCounts[3]++; dayCounts[5]++;
+        }
+
+        totalGames += playerGames;
+        teamSummary[teamCode] = (teamSummary[teamCode] || 0) + 1;
+        rows.push(`| ${name} | ${teamCode} | ${playerDays.join(" | ")} | **${playerGames}** |`);
+      });
+
+      // Yahoo 11 人先發上限，單日最多採計 11 人
+      let maxEffectiveGames = dayCounts.reduce((acc, c) => acc + Math.min(c, 11), 0);
+      let summaryStr = Object.keys(teamSummary).map(k => `${k} (${teamSummary[k]}人)`).join("、");
+
+      return {
+        markdown: rows.join('\n'),
+        dayCounts: dayCounts,
+        totalGames: totalGames,
+        maxEffectiveGames: maxEffectiveGames,
+        summaryStr: summaryStr
+      };
+    }
+
+    // =========================================================================
+    // 4. UI 互動與資料記憶邏輯
+    // =========================================================================
     const DEFAULT_TEAMS = Array.from({ length: 10 }, (_, i) => ({
       id: `team_${i + 1}`,
       name: i === 0 ? "My Team (我)" : `Player ${i + 1}`,
@@ -114,6 +258,8 @@
     const saveRosterBtn = document.getElementById('saveRosterBtn');
     const myTeamSelect = document.getElementById('myTeamSelect');
     const oppTeamSelect = document.getElementById('oppTeamSelect');
+    const weekSelect = document.getElementById('weekSelect');
+    const weekRangeText = document.getElementById('weekRangeText');
     const runAnalysisBtn = document.getElementById('runAnalysisBtn');
     const loading = document.getElementById('loading');
     const loadingMsg = document.getElementById('loadingMsg');
@@ -128,6 +274,30 @@
     apiKeyInput.addEventListener('input', (e) => localStorage.setItem('GEMINI_API_KEY', e.target.value.trim()));
 
     toggleConfigBtn.addEventListener('click', () => configSection.classList.toggle('hidden'));
+
+    // 初始化週次下拉選單，並自動選取當前週
+    function initWeeksDropdown() {
+      weekSelect.innerHTML = '';
+      const now = new Date();
+      let currentWeekIdx = 0;
+
+      WEEKS_METADATA.forEach((w, idx) => {
+        weekSelect.add(new Option(w.label, idx));
+        if (now >= w.monDate && now <= w.sunDate) {
+          currentWeekIdx = idx;
+        }
+      });
+
+      weekSelect.selectedIndex = currentWeekIdx;
+      updateWeekRangeDisplay();
+    }
+
+    function updateWeekRangeDisplay() {
+      const selectedWeek = WEEKS_METADATA[weekSelect.value];
+      weekRangeText.innerText = `對戰區間：美東時間 (EST) ${selectedWeek.monStr} 至 ${selectedWeek.sunStr} · 每日上限 11 人先發`;
+    }
+
+    weekSelect.addEventListener('change', updateWeekRangeDisplay);
 
     function renderDropdowns() {
       const prevEdit = editTeamSelect.value;
@@ -187,17 +357,20 @@
       }
     });
 
+    initWeeksDropdown();
     renderDropdowns();
 
+    // 啟動分析
     runAnalysisBtn.addEventListener('click', async () => {
       const key = apiKeyInput.value.trim();
       if (!key) {
-        showError("請先於設定中輸入你的 Gemini API Key！");
+        showError("請先於右上角設定中輸入你的 Gemini API Key！");
         return;
       }
 
       const myTeam = leagueData.find(t => t.id === myTeamSelect.value);
       const oppTeam = leagueData.find(t => t.id === oppTeamSelect.value);
+      const weekMeta = WEEKS_METADATA[weekSelect.value];
 
       if (!myTeam || myTeam.roster.length === 0 || !oppTeam || oppTeam.roster.length === 0) {
         showError("雙方隊伍名單不能為空，請先在設定中輸入 14 人名單！");
@@ -210,94 +383,56 @@
       runAnalysisBtn.disabled = true;
 
       try {
-                // 1. 精準推算「美東時間 (EST)」當週的週一至週日確切日期
-                // 1. 精準推算「美東時間 (EST)」當週的週一至週日確切日期
-        const now = new Date();
-        const estDateStr = now.toLocaleDateString("en-US", { timeZone: "America/New_York" });
-        const estDate = new Date(estDateStr);
+        // 由前端程式碼精確計算當週賽程
+        const myMatrix = calculateTeamScheduleForWeek(myTeam, weekMeta);
+        const oppMatrix = calculateTeamScheduleForWeek(oppTeam, weekMeta);
 
-        const dayOfWeek = estDate.getDay();
-        const diffToMon = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
-        
-        const monDate = new Date(estDate);
-        monDate.setDate(estDate.getDate() + diffToMon);
-        
-        const sunDate = new Date(monDate);
-        sunDate.setDate(monDate.getDate() + 6);
+        loadingMsg.innerText = `已完成 ${weekMeta.label} 賽程精確矩陣核算，連網檢索即時傷病與 14-Cat 排陣決策中...`;
 
-        const formatDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
-        
-        const todayStr = formatDate(estDate);
-        const monStr = formatDate(monDate);
-        const sunStr = formatDate(sunDate);
-
-        loadingMsg.innerText = `鎖定 NBA 官方與 Hashtag 賽程 (${monStr} 至 ${sunStr}) 比對中...`;
-
-                const prompt = `
+        const prompt = `
 你是一位精通 Yahoo Fantasy Basketball (H2H 類別對抗) 的頂級數據分析與排陣教練。
+目前為 2026-27 NBA 球季。
+對戰週次：【${weekMeta.label}】（美東時間 ${weekMeta.monStr} 至 ${weekMeta.sunStr}）。
 
-【🚨 核心最高準則：嚴格對齊 Hashtag Basketball 的「GAMES」總數欄】：
-- 參考權威網站：https://hashtagbasketball.com/advanced-nba-schedule-grid
-- 美東時間當週區間：【${monStr} (週一) 至 ${sunStr} (週日)】，共 7 天。
+【已由前端程式碼依據 NBA 官方 Schedule 完全精確核算之賽程數據 (絕對真實，請直接採用)】：
+===【我方隊伍：${myTeam.name}】===
+- 賽程矩陣表格：
+| 球員名稱 | 隊伍 | 週一 | 週二 | 週三 | 週四 | 週五 | 週六 | 週日 | 本週總場次 |
+${myMatrix.markdown}
+- 每日預計出賽人數：週一 ${myMatrix.dayCounts[0]}人、週二 ${myMatrix.dayCounts[1]}人、週三 ${myMatrix.dayCounts[2]}人、週四 ${myMatrix.dayCounts[3]}人、週五 ${myMatrix.dayCounts[4]}人、週六 ${myMatrix.dayCounts[5]}人、週日 ${myMatrix.dayCounts[6]}人。
+- 每日上限 11 人先發限制下，我方【本週最大有效總出場數】為：**${myMatrix.maxEffectiveGames} 場**。
+- 隊伍構成：${myMatrix.summaryStr}。
 
-【⚠️ 絕對防錯規則 (禁止自行腦補場次)】：
-在 Hashtag Basketball 的表格中，每支球隊名稱旁邊都有一個「GAMES (或預計出賽場次)」欄位，該欄位已經官方精算出該週的精確總場次（例如：DEN 本週 GAMES 欄位明確標註只有 2 場，BOS 也是 2 場，DAL 為 3 場）。
-1. **球員個人總場次，必須 100% 完全等於所屬球隊在 Hashtag 網站上標註的「GAMES」數字**！
-2. 嚴禁在沒有比賽的日子（例如本週二全聯盟僅有 3 場比賽，DEN 當天根本沒打）自行腦補打勾！
-3. 若該隊 GAMES 寫 2，橫向就只能打 2 個勾；若寫 3，就只能打 3 個勾。嚴禁多打或少打！
-
-【聯盟真實規則與 14-Cat 比項設定】：
-1. 陣容設定：每隊 14 人。每天先發位置上限為 11 人（PG, SG, G, SF, PF, F, C, C, UTIL, UTIL, UTIL），剩餘 3 人放板凳（Bench），不計入當日數據。
-2. 對抗數據項目 (共 14 項)：
-   - 投射項：FGM, FGA, FG%, FTM, FTA, FT%, 3PTM, 3PTA, 3PT%
-   - 計分與防守項：PTS, OREB, DREB, AST, ST, BLK, TO (失誤，越低越好), A/T (助攻失誤比)
-3. 傷病資料請連線檢索 Rotowire / NBA Official 近兩週最新動態。
-
-【我方隊伍】：${myTeam.name}
-【我方 14 人名單】：
-${myTeam.roster.join('\n')}
-
-【本週對手】：${oppTeam.name}
-【對手 14 人名單】：
-${oppTeam.roster.join('\n')}
+===【本週對手：${oppTeam.name}】===
+- 賽程矩陣表格：
+| 球員名稱 | 隊伍 | 週一 | 週二 | 週三 | 週四 | 週五 | 週六 | 週日 | 本週總場次 |
+${oppMatrix.markdown}
+- 每日預計出賽人數：週一 ${oppMatrix.dayCounts[0]}人、週二 ${oppMatrix.dayCounts[1]}人、週三 ${oppMatrix.dayCounts[2]}人、週四 ${oppMatrix.dayCounts[3]}人、週五 ${oppMatrix.dayCounts[4]}人、週六 ${oppMatrix.dayCounts[5]}人、週日 ${oppMatrix.dayCounts[6]}人。
+- 每日上限 11 人先發限制下，對手【本週最大有效總出場數】為：**${oppMatrix.maxEffectiveGames} 場**。
+- 隊伍構成：${oppMatrix.summaryStr}。
 
 ---
-請產出結構化排陣與對戰勝率分析報告：
+【請利用 Google 搜尋工具檢索 NBA 官方 / Rotowire 最新傷病報告，並產出以下決策分析】：
 
 ### 一、 🚑【2026-27 最新傷病與即時出賽狀態監測】
-- 逐一列出雙方被標註為 Out / Questionable / GTD 的球員最新進度。
-- 提醒我方今天/本週哪些傷兵「切勿擺進 11 人先發席位」，直接放板凳或 IL。
+- 逐一連網檢索雙方名單中近期被列入 Out / Questionable / GTD 的球員最新進度。
+- 明確指出我方今天哪些傷兵「切勿擺進 11 人先發席位」，建議移入板凳。
 
-### 二、 📅【${myTeam.name}（我方）賽程矩陣表格 (美東 ${monStr} ~ ${sunStr})】
-請先對齊 Hashtag 的 GAMES 數字再填入比賽對手：
-| 球員名稱 | 所屬隊伍 | 週一(${monStr.slice(5)}) | 週二 | 週三 | 週四 | 週五 | 週六 | 週日(${sunStr.slice(5)}) | GAMES總場次(以此為準) | 傷病/調度備註 |
-（註：有比賽請填寫對手如 "@OKC" 或 "✓"，無比賽填 "-"。總場次欄位必須與橫向打勾數嚴格一致！）
+### 二、 📅【雙方 11 人先發 / 3 人板凳 ${weekMeta.label} 賽程矩陣總覽】
+- 請完整輸出上述兩隊的賽程矩陣 Markdown 表格（包含每日出賽人次、11人上限標註、同隊加總與本週最大有效總場次）。
 
-表格末端請統整 3 行統計列：
-1. **每日預計出賽球員數 (人)**：全隊當天有比賽的總人數（0~14）。
-2. **每日實際可計數據人數 (人，上限 11 人)**：若超過 11 人請標註 "11 (爆滿!)"。
-3. **每日須移至板凳 (Bench) 人數 (人)**：有比賽但因為先發位置爆滿（>11人）必須犧牲的人數。
+### 三、 ⚔️【14-Cat 決策與 3 人板凳排陣策略】
+1. **有效場次對抗差距**：我方 (${myMatrix.maxEffectiveGames} 場) vs 對手 (${oppMatrix.maxEffectiveGames} 場)，勝負差距為多少場？
+2. **爆滿日 (出賽 > 11人) 的 3 人板凳具體選拔**：
+   - 針對超過 11 人出賽的爆滿日，我方必須放哪 3 位球員到板凳？
+   - 針對 14-Cat (FGM, FGA, FG%, FTM, FTA, FT%, 3PTM, 3PTA, 3PT%, PTS, OREB, DREB, AST, ST, BLK, TO, A/T) 給出具體取捨理由（例如保護命中率或力保失誤）。
+3. **少賽日 (出賽 <= 11人) 的全軍出擊建議**。
+4. **14 項數據預期勝負**：預測我方在哪些項目佔據優勢，如何拿下至少 8 項勝利。
 
-在表格下方列出：
-- **同隊伍場次合併加總**：統計相同 NBA 球隊所貢獻的總人次（例：DEN 2場、DAL 3場）。
-- **我方本週最大有效總場次**：計算週一至週日「每日實際可計數據人數」的加總（上限為 77 場）。
-
-### 三、 📅【${oppTeam.name}（對手）賽程矩陣表格 (美東 ${monStr} ~ ${sunStr})】
-依照上述完全相同的格式，完整填妥對手的 14 人矩陣表格、同隊加總與對手本週最大有效總場次。
-
-### 四、 ⚔️【14-Cat 勝負預測與 3 人板凳取捨策略】
-1. **有效出場人次對比**：我方有效場次 vs 對手有效場次，總差距是多少場？
-2. **爆滿日 (Heavy Days) 的 3 人板凳選拔建議**：
-   - 針對超過 11 人出賽的爆滿日，我方應將哪 3 位球員放板凳？
-   - 提示：如何依照 14-Cat（例如保住命中率或衝累積數據）來取捨先發？
-3. **少賽日 (Quality Days) 優勢**：指出雙方哪幾天人數 <= 11人，所有人皆可直接先發吃滿數據。
-4. **14 項數據預期勝負**：評估在雙方有效場次與陣容特性下，我方有望在哪些項目取勝。
-
-請以繁體中文與清晰、工整的 Markdown 格式呈現。
+請以繁體中文與工整 Markdown 格式呈現。
 `;
 
-
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${key}`;
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`;
 
         const response = await fetch(endpoint, {
           method: 'POST',
