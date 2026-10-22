@@ -68,7 +68,7 @@
 
       <div class="flex flex-col sm:flex-row justify-between items-center gap-3 pt-2">
         <div class="text-xs text-slate-400">
-          <span id="weekRangeText">對齊設定：美東時間 (EST) Monday - Sunday · 每日 11 人上限 3 板凳</span>
+          <span id="weekRangeText">對戰區間：美東時間 (EST) Monday - Sunday · 每日上限 11 人先發</span>
         </div>
         <button id="runAnalysisBtn" class="w-full sm:w-auto px-6 py-2.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-black text-sm rounded-xl shadow-md transition-all">
           🚀 啟動 14-Cat 排程矩陣與對戰分析
@@ -103,11 +103,9 @@
   <script>
     // =========================================================================
     // 1. NBA 2026-27 球季常規賽全週次日程定義 (美東時間 週一至週日)
-    // 依據 NBA 官方 Schedule By Team 與開季日程排列
     // =========================================================================
-    const SEASON_START_MON = new Date("2026-10-19T00:00:00-04:00"); // Week 1 開始之週一
+    const SEASON_START_MON = new Date("2026-10-19T00:00:00-04:00");
 
-    // 建立 24 週的週次名稱與日期區間
     const WEEKS_METADATA = Array.from({ length: 24 }, (_, i) => {
       let mon = new Date(SEASON_START_MON);
       mon.setDate(SEASON_START_MON.getDate() + (i * 7));
@@ -126,8 +124,7 @@
     });
 
     // =========================================================================
-    // 2. 官方賽程查詢資料庫（以日期 YYYY-MM-DD 為 Key 索引當天所有對戰）
-    // 格式: { "YYYY-MM-DD": { "隊伍簡寫": "對手主客場標記" } }
+    // 2. 官方賽程資料庫（按日期 YYYY-MM-DD 索引）
     // =========================================================================
     const FULL_NBA_SCHEDULE = {
       // --- Week 1 (10/19 - 10/25) ---
@@ -213,7 +210,6 @@
           }
         });
 
-        // 若該週為後半季尚未收錄，自動平滑預設為常規 3 場
         if (playerGames === 0) {
           playerDays = ["-", "✓", "-", "✓", "-", "✓", "-"];
           playerGames = 3;
@@ -225,7 +221,6 @@
         rows.push(`| ${name} | ${teamCode} | ${playerDays.join(" | ")} | **${playerGames}** |`);
       });
 
-      // Yahoo 11 人先發上限，單日最多採計 11 人
       let maxEffectiveGames = dayCounts.reduce((acc, c) => acc + Math.min(c, 11), 0);
       let summaryStr = Object.keys(teamSummary).map(k => `${k} (${teamSummary[k]}人)`).join("、");
 
@@ -239,7 +234,7 @@
     }
 
     // =========================================================================
-    // 4. UI 互動與資料記憶邏輯
+    // 4. UI 互動與記憶邏輯
     // =========================================================================
     const DEFAULT_TEAMS = Array.from({ length: 10 }, (_, i) => ({
       id: `team_${i + 1}`,
@@ -275,7 +270,6 @@
 
     toggleConfigBtn.addEventListener('click', () => configSection.classList.toggle('hidden'));
 
-    // 初始化週次下拉選單，並自動選取當前週
     function initWeeksDropdown() {
       weekSelect.innerHTML = '';
       const now = new Date();
@@ -383,7 +377,6 @@
       runAnalysisBtn.disabled = true;
 
       try {
-        // 由前端程式碼精確計算當週賽程
         const myMatrix = calculateTeamScheduleForWeek(myTeam, weekMeta);
         const oppMatrix = calculateTeamScheduleForWeek(oppTeam, weekMeta);
 
@@ -432,7 +425,8 @@ ${oppMatrix.markdown}
 請以繁體中文與工整 Markdown 格式呈現。
 `;
 
-        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite:generateContent?key=${key}`;
+        // 呼叫 Gemini 3.5 Flash Lite 官方新端點
+        const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${key}`;
 
         const response = await fetch(endpoint, {
           method: 'POST',
@@ -454,6 +448,7 @@ ${oppMatrix.markdown}
         reportContent.innerHTML = marked.parse(text);
         analysisTime.innerText = `最後更新：${new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' })}`;
 
+        // 渲染來源連結
         sourcesList.innerHTML = '';
         const chunks = candidate.groundingMetadata?.groundingChunks;
         if (chunks && chunks.length > 0) {
