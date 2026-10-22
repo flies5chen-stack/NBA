@@ -210,31 +210,52 @@
       runAnalysisBtn.disabled = true;
 
       try {
+                // 1. 精準推算「美東時間 (EST)」當週的週一至週日確切日期
         const now = new Date();
-        const year = now.getFullYear();
-        const month = String(now.getMonth() + 1).padStart(2, '0');
-        const day = String(now.getDate()).padStart(2, '0');
-        const todayStr = `${year}-${month}-${day}`;
+        const estDateStr = now.toLocaleDateString("en-US", { timeZone: "America/New_York" });
+        const estDate = new Date(estDateStr);
 
-        loadingMsg.innerText = `正在連線 Google 檢索雙方 28 位球員的美東時間賽程與最新傷病 (${todayStr})...`;
+        // 計算當前美東時間是星期幾 (0 是週日, 1 是週一, ... 6 是週六)
+        const dayOfWeek = estDate.getDay();
+        const diffToMon = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
+        
+        const monDate = new Date(estDate);
+        monDate.setDate(estDate.getDate() + diffToMon);
+        
+        const sunDate = new Date(monDate);
+        sunDate.setDate(monDate.getDate() + 6);
 
-                const prompt = `
+        const formatDate = (d) => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        
+        const todayStr = formatDate(estDate);
+        const monStr = formatDate(monDate);
+        const sunStr = formatDate(sunDate);
+
+        loadingMsg.innerText = `鎖定美東當週 (${monStr} 至 ${sunStr}) 比對 Hashtag 賽程中...`;
+
+        const prompt = `
 你是一位精通 Yahoo Fantasy Basketball (H2H 類別對抗) 的頂級數據分析與排陣教練。
-【目前基準日期】：今天是 ${todayStr}（2026-2027 球季）。
-【時間與賽程標準】：必須嚴格以「美東時間 (EST) 週一至週日 (Monday ~ Sunday)」為準，符合 Yahoo Fantasy 週對戰時區。
 
-【賽程唯一權威基準網站 (重要)】：
-本週所有 NBA 球隊的出賽日程與場次數，**請嚴格指定檢索並參考以下權威賽程網站**：
-👉 https://hashtagbasketball.com/advanced-nba-schedule-grid
-（請鎖定該網站提供的本週 Advanced NBA Schedule Grid 矩陣，所有球隊的比賽天數、對手、場次加總皆以此站為準，避免因不同來源導致場次不一致！）
+【🚨 極嚴格時間與週次限制 (核心防錯規則)】：
+- 目前美東基準日期為：${todayStr}。
+- Yahoo Fantasy 本週對戰區間**嚴格限定為美東時間 (EST)：【${monStr} (週一) 至 ${sunStr} (週日)】，共 7 天**！
+- 📅 各天精確日期對照：
+  • 週一 (Mon): ${monStr}
+  • 週日 (Sun): ${sunStr}
 
-【傷病過濾規則】：傷病情報請連線檢索 Rotowire / NBA Official 近兩週最新消息，過期舊聞一律忽略。
+【⚠️ 跨週排除警告 (禁止計算下週場次)】：
+請檢索並參考權威網站：https://hashtagbasketball.com/advanced-nba-schedule-grid
+在抓取該網站表格時請務必特別注意：
+1. 該網站可能同時顯示跨週賽程。**凡是超過 ${sunStr} (週日) 以後的任何比賽（例如下週一、下週二），一律絕對禁止計入！**
+2. 請務必比對欄位頂部的公曆日期（Date），只能採計介於【${monStr}】到【${sunStr}】之間的比賽。
+3. 單一 NBA 球隊在一週 7 天內通常只有 2~4 場比賽。**若算出的場次 >= 5 場，必定是誤計了下週賽程，請立即修正！**
 
 【聯盟真實規則與 14-Cat 比項設定】：
 1. 陣容設定：每隊 14 人。每天先發位置上限為 11 人（PG, SG, G, SF, PF, F, C, C, UTIL, UTIL, UTIL），剩餘 3 人放板凳（Bench），不計入當日數據。
 2. 對抗數據項目 (共 14 項)：
    - 投射項：FGM, FGA, FG%, FTM, FTA, FT%, 3PTM, 3PTA, 3PT%
    - 計分與防守項：PTS, OREB, DREB, AST, ST, BLK, TO (失誤，越低越好), A/T (助攻失誤比)
+3. 傷病資料請採納近兩週最新動態，過期舊聞一律忽略。
 
 【我方隊伍】：${myTeam.name}
 【我方 14 人名單】：
@@ -251,10 +272,10 @@ ${oppTeam.roster.join('\n')}
 - 逐一列出雙方被標註為 Out / Questionable / GTD 的球員最新進度。
 - 提醒我方今天/本週哪些傷兵「切勿擺進 11 人先發席位」，直接放板凳或 IL。
 
-### 二、 📅【${myTeam.name}（我方）11人先發/3板凳 賽程矩陣表格】
-以美東時間週一到週日呈現 14 人比賽安排（依 Hashtag Basketball 賽程）：
-| 球員名稱 | 所屬隊伍 | 週一(Mon) | 週二(Tue) | 週三(Wed) | 週四(Thu) | 週五(Fri) | 週六(Sat) | 週日(Sun) | 個人總場次 | 傷病/調度備註 |
-（註：有比賽請填寫 "✓" 或對手如 "@BOS"，無比賽填 "-"）
+### 二、 📅【${myTeam.name}（我方）賽程矩陣表格 (美東 ${monStr} ~ ${sunStr})】
+嚴格以美東時間本週一至週日呈現 14 人比賽安排（依 Hashtag Basketball 該週區間）：
+| 球員名稱 | 所屬隊伍 | 週一(${monStr.slice(5)}) | 週二 | 週三 | 週四 | 週五 | 週六 | 週日(${sunStr.slice(5)}) | 本週總場次 | 傷病/調度備註 |
+（註：有比賽請填寫 "✓" 或對手如 "@BOS"，無比賽填 "-"，絕對不可包含下週賽程）
 
 表格末端請統整 3 行統計列：
 1. **每日預計出賽球員數 (人)**：全隊當天有比賽的總人數（0~14）。
@@ -265,7 +286,7 @@ ${oppTeam.roster.join('\n')}
 - **同隊伍場次合併加總**：統計相同 NBA 球隊所貢獻的總人次（例：ATL (2人) × 4場 = 8 人次）。
 - **我方本週最大有效總場次**：計算週一至週日「每日實際可計數據人數」的加總（上限為 77 場）。
 
-### 三、 📅【${oppTeam.name}（對手）11人先發/3板凳 賽程矩陣表格】
+### 三、 📅【${oppTeam.name}（對手）賽程矩陣表格 (美東 ${monStr} ~ ${sunStr})】
 依照上述完全相同的格式，呈現對手的 14 人矩陣表格、同隊加總與對手本週最大有效總場次。
 
 ### 四、 ⚔️【14-Cat 勝負預測與 3 人板凳取捨策略】
@@ -278,6 +299,7 @@ ${oppTeam.roster.join('\n')}
 
 請以繁體中文與清晰、工整的 Markdown 格式呈現。
 `;
+
 
 
         const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key=${key}`;
