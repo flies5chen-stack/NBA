@@ -211,11 +211,11 @@
 
       try {
                 // 1. 精準推算「美東時間 (EST)」當週的週一至週日確切日期
+                // 1. 精準推算「美東時間 (EST)」當週的週一至週日確切日期
         const now = new Date();
         const estDateStr = now.toLocaleDateString("en-US", { timeZone: "America/New_York" });
         const estDate = new Date(estDateStr);
 
-        // 計算當前美東時間是星期幾 (0 是週日, 1 是週一, ... 6 是週六)
         const dayOfWeek = estDate.getDay();
         const diffToMon = (dayOfWeek === 0 ? -6 : 1) - dayOfWeek;
         
@@ -231,31 +231,28 @@
         const monStr = formatDate(monDate);
         const sunStr = formatDate(sunDate);
 
-        loadingMsg.innerText = `鎖定美東當週 (${monStr} 至 ${sunStr}) 比對 Hashtag 賽程中...`;
+        loadingMsg.innerText = `鎖定 NBA 官方與 Hashtag 賽程 (${monStr} 至 ${sunStr}) 比對中...`;
 
         const prompt = `
 你是一位精通 Yahoo Fantasy Basketball (H2H 類別對抗) 的頂級數據分析與排陣教練。
 
-【🚨 極嚴格時間與週次限制 (核心防錯規則)】：
-- 目前美東基準日期為：${todayStr}。
-- Yahoo Fantasy 本週對戰區間**嚴格限定為美東時間 (EST)：【${monStr} (週一) 至 ${sunStr} (週日)】，共 7 天**！
-- 📅 各天精確日期對照：
-  • 週一 (Mon): ${monStr}
-  • 週日 (Sun): ${sunStr}
+【🚨 核心賽程依據與雙重權威來源 (嚴格執行)】：
+- 本週對戰區間嚴格限定為美東時間 (EST)：【${monStr} (週一) 至 ${sunStr} (週日)】，共 7 天。
+- 賽程檢索請務必交叉比對以下雙權威網站：
+  1. NBA 官方賽程庫：nba.com/schedule
+  2. Hashtag Basketball 矩陣站：hashtagbasketball.com/advanced-nba-schedule-grid
+- 傷病情報請連線檢索 Rotowire / NBA Official 近兩週最新狀態。
 
-【⚠️ 跨週排除警告 (禁止計算下週場次)】：
-請檢索並參考權威網站：https://hashtagbasketball.com/advanced-nba-schedule-grid
-在抓取該網站表格時請務必特別注意：
-1. 該網站可能同時顯示跨週賽程。**凡是超過 ${sunStr} (週日) 以後的任何比賽（例如下週一、下週二），一律絕對禁止計入！**
-2. 請務必比對欄位頂部的公曆日期（Date），只能採計介於【${monStr}】到【${sunStr}】之間的比賽。
-3. 單一 NBA 球隊在一週 7 天內通常只有 2~4 場比賽。**若算出的場次 >= 5 場，必定是誤計了下週賽程，請立即修正！**
+【⚠️ 防止遺漏後半週賽程的重要規則】：
+1. 嚴禁只讀到週三或週四就漏掉後半週！請逐日完整檢查該 NBA 球隊在美東時間週一、二、三、四、五、六、日【每一天】的官方賽事安排（例如 DAL 本週排定三場：週三 @HOU、週五 @IND、週六 vs SA，切勿漏抓週五與週六！）。
+2. 單隊在單週 7 天內的場次通常為 2~4 場。若算出來只有 1 場或 >= 5 場，必定有漏抓或誤抓下週，請自動重新核對官方賽程！
+3. 凡是在 ${sunStr} 之後的賽事（如下週一、下週二）一律堅決剔除。
 
 【聯盟真實規則與 14-Cat 比項設定】：
 1. 陣容設定：每隊 14 人。每天先發位置上限為 11 人（PG, SG, G, SF, PF, F, C, C, UTIL, UTIL, UTIL），剩餘 3 人放板凳（Bench），不計入當日數據。
 2. 對抗數據項目 (共 14 項)：
    - 投射項：FGM, FGA, FG%, FTM, FTA, FT%, 3PTM, 3PTA, 3PT%
    - 計分與防守項：PTS, OREB, DREB, AST, ST, BLK, TO (失誤，越低越好), A/T (助攻失誤比)
-3. 傷病資料請採納近兩週最新動態，過期舊聞一律忽略。
 
 【我方隊伍】：${myTeam.name}
 【我方 14 人名單】：
@@ -273,9 +270,9 @@ ${oppTeam.roster.join('\n')}
 - 提醒我方今天/本週哪些傷兵「切勿擺進 11 人先發席位」，直接放板凳或 IL。
 
 ### 二、 📅【${myTeam.name}（我方）賽程矩陣表格 (美東 ${monStr} ~ ${sunStr})】
-嚴格以美東時間本週一至週日呈現 14 人比賽安排（依 Hashtag Basketball 該週區間）：
+請完整核對週一到週日的每一天，嚴禁遺漏週五/週六/週日的比賽：
 | 球員名稱 | 所屬隊伍 | 週一(${monStr.slice(5)}) | 週二 | 週三 | 週四 | 週五 | 週六 | 週日(${sunStr.slice(5)}) | 本週總場次 | 傷病/調度備註 |
-（註：有比賽請填寫 "✓" 或對手如 "@BOS"，無比賽填 "-"，絕對不可包含下週賽程）
+（註：有比賽請填寫 "✓" 或對手如 "@BOS"，無比賽填 "-"）
 
 表格末端請統整 3 行統計列：
 1. **每日預計出賽球員數 (人)**：全隊當天有比賽的總人數（0~14）。
@@ -283,11 +280,11 @@ ${oppTeam.roster.join('\n')}
 3. **每日須移至板凳 (Bench) 人數 (人)**：有比賽但因為先發位置爆滿（>11人）必須犧牲的人數。
 
 在表格下方列出：
-- **同隊伍場次合併加總**：統計相同 NBA 球隊所貢獻的總人次（例：ATL (2人) × 4場 = 8 人次）。
+- **同隊伍場次合併加總**：統計相同 NBA 球隊所貢獻的總人次（例：DAL 3場、ATL 3場）。
 - **我方本週最大有效總場次**：計算週一至週日「每日實際可計數據人數」的加總（上限為 77 場）。
 
 ### 三、 📅【${oppTeam.name}（對手）賽程矩陣表格 (美東 ${monStr} ~ ${sunStr})】
-依照上述完全相同的格式，呈現對手的 14 人矩陣表格、同隊加總與對手本週最大有效總場次。
+依照上述完全相同的格式，完整填妥對手的 14 人矩陣表格、同隊加總與對手本週最大有效總場次。
 
 ### 四、 ⚔️【14-Cat 勝負預測與 3 人板凳取捨策略】
 1. **有效出場人次對比**：我方有效場次 vs 對手有效場次，總差距是多少場？
@@ -299,6 +296,7 @@ ${oppTeam.roster.join('\n')}
 
 請以繁體中文與清晰、工整的 Markdown 格式呈現。
 `;
+
 
 
 
