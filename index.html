@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NBA Yahoo Fantasy 實況戰情分析室 (即時比分與後半週動態排陣)</title>
+  <title>NBA Yahoo Fantasy 實況戰情分析室 (下拉式選單版)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -14,7 +14,7 @@
     <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-5 mb-6 border-b border-slate-800 gap-4">
       <div>
         <h1 class="text-2xl font-black text-amber-400 tracking-wide">🏀 NBA YAHOO FANTASY 實況對抗戰情室</h1>
-        <p class="text-xs text-slate-400 mt-1">即時比分追蹤 · 完賽數據比對 · 剩餘賽程精確矩陣 · 14-Cat 後半週動態逆轉戰略</p>
+        <p class="text-xs text-slate-400 mt-1">選單選取球員 · 即時比分追蹤 · 完賽數據比對 · 14-Cat 後半週動態逆轉戰略</p>
       </div>
       <button id="toggleConfigBtn" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700">
         ⚙️ 聯盟設定 / 編輯玩家與名單
@@ -38,14 +38,39 @@
         </div>
       </div>
 
+      <!-- 下拉選單快速加入球員區塊 -->
+      <div class="bg-slate-900/90 p-4 rounded-xl border border-slate-700/80">
+        <label class="block text-xs font-bold text-amber-400 mb-2">⚡ 快速加入球員（先選球隊 ➔ 自動篩選球員）</label>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+          <div>
+            <span class="text-[11px] text-slate-400 block mb-1">第一步：選擇 NBA 球隊</span>
+            <select id="nbaTeamPicker" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white"></select>
+          </div>
+          <div>
+            <span class="text-[11px] text-slate-400 block mb-1">第二步：選擇球隊內球員</span>
+            <select id="nbaPlayerPicker" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white"></select>
+          </div>
+          <div class="flex items-end">
+            <button id="addPlayerBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-lg text-xs transition-colors flex justify-center items-center gap-1">
+              <span>＋ 加入名單</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 目前名單標籤展示與手動編輯 -->
       <div>
         <div class="flex justify-between items-center mb-1">
-          <label class="block text-xs font-semibold text-slate-300">3. 該隊 14 人名單（格式：球員英文全名 - 球隊簡寫，每行一人）</label>
+          <label class="block text-xs font-semibold text-slate-300">
+            3. 目前名單 (<span id="rosterCountBadge" class="text-amber-400 font-bold">0</span>/14 人)
+          </label>
           <button id="saveRosterBtn" class="text-xs bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold px-4 py-1.5 rounded-lg transition-colors">
             💾 儲存隊伍名稱與名單
           </button>
         </div>
-        <textarea id="rosterInput" rows="7" placeholder="例如：&#10;Fred VanVleet - HOU&#10;Anthony Edwards - MIN&#10;Kyrie Irving - DAL&#10;Brandon Miller - CHA&#10;Deni Avdija - POR&#10;Zach Edey - MEM" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs font-mono text-slate-200"></textarea>
+        <!-- 標籤可視化卡片區 -->
+        <div id="rosterTagsContainer" class="flex flex-wrap gap-1.5 p-3 bg-slate-900/60 border border-slate-700 rounded-lg min-h-[50px] mb-2"></div>
+        <textarea id="rosterInput" rows="5" placeholder="格式：球員英文全名 - 球隊簡寫&#10;Luka Doncic - DAL&#10;Victor Wembanyama - SAS" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs font-mono text-slate-200"></textarea>
       </div>
     </section>
 
@@ -102,7 +127,43 @@
 
   <script>
     // =========================================================================
-    // 1. NBA 2026-27 球季常規賽全週次日程定義 (美東時間 週一至週日)
+    // 0. NBA 30 支球隊與主要現役球員名單庫 (提供下拉選單挑選)
+    // =========================================================================
+    const NBA_TEAMS_ROSTERS = {
+      "ATL": { name: "老鷹 (Atlanta Hawks)", players: ["Trae Young", "Jalen Johnson", "Dyson Daniels", "Clint Capela", "De'Andre Hunter", "Bogdan Bogdanovic", "Onyeka Okongwu", "Zaccharie Risacher", "Larry Nance Jr."] },
+      "BOS": { name: "塞爾提克 (Boston Celtics)", players: ["Jayson Tatum", "Jaylen Brown", "Derrick White", "Jrue Holiday", "Kristaps Porzingis", "Al Horford", "Payton Pritchard", "Sam Hauser", "Luke Kornet"] },
+      "BKN": { name: "籃網 (Brooklyn Nets)", players: ["Cam Thomas", "Dennis Schroder", "Cameron Johnson", "Nic Claxton", "Dorian Finney-Smith", "Ben Simmons", "Noah Clowney", "Jalen Wilson", "Day'Ron Sharpe"] },
+      "CHA": { name: "黃蜂 (Charlotte Hornets)", players: ["LaMelo Ball", "Brandon Miller", "Miles Bridges", "Mark Williams", "Nick Richards", "Grant Williams", "Tre Mann", "Cody Martin", "Vasilije Micic"] },
+      "CHI": { name: "公牛 (Chicago Bulls)", players: ["Zach LaVine", "Nikola Vucevic", "Coby White", "Josh Giddey", "Patrick Williams", "Ayo Dosunmu", "Lonzo Ball", "Matas Buzelis", "Jalen Smith"] },
+      "CLE": { name: "騎士 (Cleveland Cavaliers)", players: ["Donovan Mitchell", "Darius Garland", "Evan Mobley", "Jarrett Allen", "Caris LeVert", "Max Strus", "Isaac Okoro", "Dean Wade", "Georges Niang"] },
+      "DAL": { name: "獨行俠 (Dallas Mavericks)", players: ["Luka Doncic", "Kyrie Irving", "Klay Thompson", "Dereck Lively II", "Daniel Gafford", "P.J. Washington", "Naji Marshall", "Quentin Grimes", "Spencer Dinwiddie"] },
+      "DEN": { name: "金塊 (Denver Nuggets)", players: ["Nikola Jokic", "Jamal Murray", "Michael Porter Jr.", "Aaron Gordon", "Christian Braun", "Russell Westbrook", "Peyton Watson", "Julian Strawther", "DeMar DeRozan"] },
+      "DET": { name: "活塞 (Detroit Pistons)", players: ["Cade Cunningham", "Jaden Ivey", "Tobias Harris", "Jalen Duren", "Tim Hardaway Jr.", "Malik Beasley", "Isaiah Stewart", "Ausar Thompson", "Simone Fontecchio"] },
+      "GSW": { name: "勇士 (Golden State Warriors)", players: ["Stephen Curry", "Jonathan Kuminga", "Draymond Green", "Buddy Hield", "Andrew Wiggins", "Brandin Podziemski", "De'Anthony Melton", "Moses Moody", "Kevon Looney"] },
+      "HOU": { name: "火箭 (Houston Rockets)", players: ["Alperen Sengun", "Jalen Green", "Fred VanVleet", "Jabari Smith Jr.", "Amen Thompson", "Tari Eason", "Dillon Brooks", "Steven Adams", "Reed Sheppard"] },
+      "IND": { name: "溜馬 (Indiana Pacers)", players: ["Tyrese Haliburton", "Pascal Siakam", "Myles Turner", "Bennedict Mathurin", "Andrew Nembhard", "Aaron Nesmith", "T.J. McConnell", "Obi Toppin", "Jarace Walker"] },
+      "LAC": { name: "快艇 (LA Clippers)", players: ["James Harden", "Kawhi Leonard", "Norman Powell", "Ivica Zubac", "Terance Mann", "Derrick Jones Jr.", "Kevin Porter Jr.", "Kris Dunn", "Amir Coffey"] },
+      "LAL": { name: "湖人 (LA Lakers)", players: ["Anthony Davis", "LeBron James", "Austin Reaves", "D'Angelo Russell", "Rui Hachimura", "Dalton Knecht", "Gabe Vincent", "Max Christie", "Jaxson Hayes"] },
+      "MEM": { name: "灰熊 (Memphis Grizzlies)", players: ["Ja Morant", "Jaren Jackson Jr.", "Desmond Bane", "Zach Edey", "Marcus Smart", "Santi Aldama", "Scotty Pippen Jr.", "Jaylen Wells", "Vince Williams Jr."] },
+      "MIA": { name: "熱火 (Miami Heat)", players: ["Bam Adebayo", "Jimmy Butler", "Tyler Herro", "Terry Rozier", "Jaime Jaquez Jr.", "Nikola Jovic", "Duncan Robinson", "Kel'el Ware", "Haywood Highsmith"] },
+      "MIL": { name: "公鹿 (Milwaukee Bucks)", players: ["Giannis Antetokounmpo", "Damian Lillard", "Khris Middleton", "Brook Lopez", "Bobby Portis", "Gary Trent Jr.", "Taurean Prince", "Delon Wright", "Pat Connaughton"] },
+      "MIN": { name: "灰狼 (Minnesota Timberwolves)", players: ["Anthony Edwards", "Julius Randle", "Rudy Gobert", "Jaden McDaniels", "Mike Conley", "Naz Reid", "Donte DiVincenzo", "Nickeil Alexander-Walker", "Rob Dillingham"] },
+      "NOP": { name: "鵜鶘 (New Orleans Pelicans)", players: ["Zion Williamson", "Brandon Ingram", "CJ McCollum", "Dejounte Murray", "Trey Murphy III", "Herbert Jones", "Yves Missi", "Jordan Hawkins", "Jose Alvarado"] },
+      "NYK": { name: "尼克 (New York Knicks)", players: ["Jalen Brunson", "Karl-Anthony Towns", "OG Anunoby", "Mikal Bridges", "Josh Hart", "Miles McBride", "Mitchell Robinson", "Precious Achiuwa", "Cameron Payne"] },
+      "OKC": { name: "雷霆 (Oklahoma City Thunder)", players: ["Shai Gilgeous-Alexander", "Chet Holmgren", "Jalen Williams", "Isaiah Hartenstein", "Alex Caruso", "Luguentz Dort", "Cason Wallace", "Aaron Wiggins", "Isaiah Joe"] },
+      "ORL": { name: "魔術 (Orlando Magic)", players: ["Paolo Banchero", "Franz Wagner", "Jalen Suggs", "Wendell Carter Jr.", "Kentavious Caldwell-Pope", "Moritz Wagner", "Cole Anthony", "Anthony Black", "Jonathan Isaac"] },
+      "PHI": { name: "七六人 (Philadelphia 76ers)", players: ["Joel Embiid", "Tyrese Maxey", "Paul George", "Kelly Oubre Jr.", "Caleb Martin", "Andre Drummond", "Kyle Lowry", "Guerschon Yabusele", "Jared McCain"] },
+      "PHX": { name: "太陽 (Phoenix Suns)", players: ["Kevin Durant", "Devin Booker", "Bradley Beal", "Jusuf Nurkic", "Tyus Jones", "Royce O'Neale", "Grayson Allen", "Mason Plumlee", "Ryan Dunn"] },
+      "POR": { name: "拓荒者 (Portland Trail Blazers)", players: ["Anfernee Simons", "Shaedon Sharpe", "Jerami Grant", "Deandre Ayton", "Deni Avdija", "Scoot Henderson", "Toumani Camara", "Donovan Clingan", "Robert Williams III"] },
+      "SAC": { name: "國王 (Sacramento Kings)", players: ["De'Aaron Fox", "Domantas Sabonis", "Keegan Murray", "Malik Monk", "Keon Ellis", "Kevin Huerter", "Trey Lyles", "Alex Len", "Doug McDermott"] },
+      "SAS": { name: "馬刺 (San Antonio Spurs)", players: ["Victor Wembanyama", "Chris Paul", "Devin Vassell", "Jeremy Sochan", "Stephon Castle", "Keldon Johnson", "Harrison Barnes", "Zach Collins", "Tre Jones"] },
+      "TOR": { name: "暴龍 (Toronto Raptors)", players: ["Scottie Barnes", "RJ Barrett", "Immanuel Quickley", "Jakob Poeltl", "Gradey Dick", "Ochai Agbaji", "Davion Mitchell", "Kelly Olynyk", "Chris Boucher"] },
+      "UTA": { name: "爵士 (Utah Jazz)", players: ["Lauri Markkanen", "Keyonte George", "Collin Sexton", "John Collins", "Walker Kessler", "Jordan Clarkson", "Taylor Hendricks", "Cody Williams", "Brice Sensabaugh"] },
+      "WAS": { name: "巫師 (Washington Wizards)", players: ["Jordan Poole", "Kyle Kuzma", "Alex Sarr", "Bilal Coulibaly", "Bub Carrington", "Malcolm Brogdon", "Jonas Valanciunas", "Corey Kispert", "Kyshawn George"] }
+    };
+
+    // =========================================================================
+    // 1. NBA 2026-27 球季常規賽全週次日程定義
     // =========================================================================
     const SEASON_START_MON = new Date("2026-10-19T00:00:00-04:00");
 
@@ -124,10 +185,9 @@
     });
 
     // =========================================================================
-    // 2. 官方賽程資料庫（按日期 YYYY-MM-DD 索引）
+    // 2. 官方賽程資料庫
     // =========================================================================
     const FULL_NBA_SCHEDULE = {
-      // --- Week 1 (10/19 - 10/25) ---
       "2026-10-20": { "BOS": "@DET", "DET": "BOS", "MIN": "@LAL", "LAL": "MIN", "NYK": "BOS" },
       "2026-10-21": {
         "ATL": "@ORL", "ORL": "ATL", "CHA": "@BKN", "BKN": "CHA", "CHI": "@TOR", "TOR": "CHI",
@@ -152,8 +212,6 @@
         "GSW": "UTA", "UTA": "@SAC", "MEM": "@SAS", "SAS": "@POR", "POR": "SAS", "OKC": "@GSW",
         "PHI": "TOR", "TOR": "@PHI", "WAS": "@MIL", "MIL": "WAS"
       },
-
-      // --- Week 2 (10/26 - 11/01) ---
       "2026-10-26": { "BOS": "MIL", "MIL": "@BOS", "DAL": "UTA", "UTA": "@DAL", "DEN": "TOR", "TOR": "@DEN", "PHX": "LAL", "LAL": "@PHX" },
       "2026-10-27": { "BKN": "DEN", "DEN": "@BKN", "GSW": "NOP", "NOP": "@GSW", "MIN": "DAL", "DAL": "@MIN", "SAC": "POR", "POR": "@SAC" },
       "2026-10-28": {
@@ -175,7 +233,7 @@
     };
 
     // =========================================================================
-    // 3. 通用隊伍場次矩陣計算引擎（包含「已完賽 vs 剩餘場次」分析）
+    // 3. 矩陣計算引擎
     // =========================================================================
     function getWeekDaysArray(monDate) {
       return Array.from({ length: 7 }, (_, i) => {
@@ -212,9 +270,9 @@
             dayCounts[idx]++;
             if (dateStr >= todayEstStr) {
               playerRemaining++;
-              playerDays.push(`**${opp}**`); // 今日與未來場次粗體
+              playerDays.push(`**${opp}**`);
             } else {
-              playerDays.push(`${opp}(完)`); // 過去已打完場次
+              playerDays.push(`${opp}(完)`);
             }
           } else {
             playerDays.push("-");
@@ -236,7 +294,6 @@
         rows.push(`| ${name} | ${teamCode} | ${playerDays.join(" | ")} | ${playerTotal} | **${playerRemaining}** |`);
       });
 
-      // Yahoo 11 人先發上限
       let maxEffectiveGames = dayCounts.reduce((acc, c) => acc + Math.min(c, 11), 0);
       let summaryStr = Object.keys(teamSummary).map(k => `${k} (${teamSummary[k]}人)`).join("、");
 
@@ -252,7 +309,7 @@
     }
 
     // =========================================================================
-    // 4. UI 互動與記憶邏輯
+    // 4. UI 邏輯與雙級下拉選單聯動
     // =========================================================================
     const DEFAULT_TEAMS = Array.from({ length: 10 }, (_, i) => ({
       id: `team_${i + 1}`,
@@ -269,6 +326,13 @@
     const teamNameInput = document.getElementById('teamNameInput');
     const rosterInput = document.getElementById('rosterInput');
     const saveRosterBtn = document.getElementById('saveRosterBtn');
+    const rosterCountBadge = document.getElementById('rosterCountBadge');
+    const rosterTagsContainer = document.getElementById('rosterTagsContainer');
+
+    const nbaTeamPicker = document.getElementById('nbaTeamPicker');
+    const nbaPlayerPicker = document.getElementById('nbaPlayerPicker');
+    const addPlayerBtn = document.getElementById('addPlayerBtn');
+
     const myTeamSelect = document.getElementById('myTeamSelect');
     const oppTeamSelect = document.getElementById('oppTeamSelect');
     const weekSelect = document.getElementById('weekSelect');
@@ -288,6 +352,84 @@
 
     toggleConfigBtn.addEventListener('click', () => configSection.classList.toggle('hidden'));
 
+    // 初始化球隊選單
+    function initTeamPickers() {
+      nbaTeamPicker.innerHTML = '';
+      Object.keys(NBA_TEAMS_ROSTERS).forEach(code => {
+        const opt = new Option(`${code} - ${NBA_TEAMS_ROSTERS[code].name}`, code);
+        nbaTeamPicker.add(opt);
+      });
+      updatePlayerPicker();
+    }
+
+    // 球隊變更時，自動更新球員清單
+    function updatePlayerPicker() {
+      nbaPlayerPicker.innerHTML = '';
+      const selectedCode = nbaTeamPicker.value;
+      const teamData = NBA_TEAMS_ROSTERS[selectedCode];
+      if (teamData && teamData.players) {
+        teamData.players.forEach(p => {
+          nbaPlayerPicker.add(new Option(p, `${p} - ${selectedCode}`));
+        });
+      }
+    }
+
+    nbaTeamPicker.addEventListener('change', updatePlayerPicker);
+
+    // 點擊「＋ 加入名單」
+    addPlayerBtn.addEventListener('click', () => {
+      const val = nbaPlayerPicker.value;
+      if (!val) return;
+
+      let currentLines = rosterInput.value.split('\n').map(s => s.trim()).filter(Boolean);
+      if (currentLines.includes(val)) {
+        alert("此球員已在名單中！");
+        return;
+      }
+      if (currentLines.length >= 14) {
+        if (!confirm("目前名單已滿 14 人，確定要再加入嗎？")) return;
+      }
+
+      currentLines.push(val);
+      rosterInput.value = currentLines.join('\n');
+      updateRosterUI();
+    });
+
+    // 更新名單標籤與計數器
+    function updateRosterUI() {
+      const lines = rosterInput.value.split('\n').map(s => s.trim()).filter(Boolean);
+      rosterCountBadge.innerText = lines.length;
+      rosterTagsContainer.innerHTML = '';
+
+      if (lines.length === 0) {
+        rosterTagsContainer.innerHTML = '<span class="text-xs text-slate-500 italic">目前名單尚無球員，請從上方選單加入或手動輸入。</span>';
+        return;
+      }
+
+      lines.forEach((line, index) => {
+        const tag = document.createElement('div');
+        tag.className = 'inline-flex items-center gap-1.5 bg-slate-800 border border-slate-600 px-2.5 py-1 rounded-full text-xs text-amber-300 shadow-sm';
+        tag.innerHTML = `
+          <span>${escapeHtml(line)}</span>
+          <button type="button" data-idx="${index}" class="remove-tag-btn text-slate-400 hover:text-rose-400 font-bold ml-1">✕</button>
+        `;
+        rosterTagsContainer.appendChild(tag);
+      });
+
+      // 綁定移除按鈕
+      document.querySelectorAll('.remove-tag-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const idx = parseInt(e.target.getAttribute('data-idx'));
+          lines.splice(idx, 1);
+          rosterInput.value = lines.join('\n');
+          updateRosterUI();
+        });
+      });
+    }
+
+    rosterInput.addEventListener('input', updateRosterUI);
+
+    // 初始化週次選單
     function initWeeksDropdown() {
       weekSelect.innerHTML = '';
       const now = new Date();
@@ -345,6 +487,7 @@
       if (team) {
         teamNameInput.value = team.name;
         rosterInput.value = team.roster.join('\n');
+        updateRosterUI();
       }
     }
 
@@ -369,6 +512,7 @@
       }
     });
 
+    initTeamPickers();
     initWeeksDropdown();
     renderDropdowns();
 
@@ -385,7 +529,7 @@
       const weekMeta = WEEKS_METADATA[weekSelect.value];
 
       if (!myTeam || myTeam.roster.length === 0 || !oppTeam || oppTeam.roster.length === 0) {
-        showError("雙方隊伍名單不能為空，請先在設定中輸入 14 人名單！");
+        showError("雙方隊伍名單不能為空，請先在設定中選取 14 人名單！");
         return;
       }
 
@@ -395,14 +539,12 @@
       runAnalysisBtn.disabled = true;
 
       try {
-        // 計算當前美東時間日期
         const now = new Date();
         const estDateStr = now.toLocaleDateString("en-US", { timeZone: "America/New_York" });
         const estDate = new Date(estDateStr);
         const fmt = d => `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
         const todayEstStr = fmt(estDate);
 
-        // 由前端程式碼精確計算當週賽程（自動標記已完賽 vs 剩餘場次）
         const myMatrix = calculateTeamScheduleForWeek(myTeam, weekMeta, todayEstStr);
         const oppMatrix = calculateTeamScheduleForWeek(oppTeam, weekMeta, todayEstStr);
 
