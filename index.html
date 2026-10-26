@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>NBA Yahoo Fantasy 實況戰情分析室 (下拉式選單版)</title>
+  <title>NBA Yahoo Fantasy 實況戰情分析室 (自動補全搜尋版)</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 </head>
@@ -14,7 +14,7 @@
     <header class="flex flex-col sm:flex-row justify-between items-start sm:items-center pb-5 mb-6 border-b border-slate-800 gap-4">
       <div>
         <h1 class="text-2xl font-black text-amber-400 tracking-wide">🏀 NBA YAHOO FANTASY 實況對抗戰情室</h1>
-        <p class="text-xs text-slate-400 mt-1">選單選取球員 · 即時比分追蹤 · 完賽數據比對 · 14-Cat 後半週動態逆轉戰略</p>
+        <p class="text-xs text-slate-400 mt-1">智慧關鍵字自動補全 · 即時比分追蹤 · 官方賽程庫 · 14-Cat 後半週動態逆轉戰略</p>
       </div>
       <button id="toggleConfigBtn" class="text-xs bg-slate-800 hover:bg-slate-700 text-slate-300 px-3 py-1.5 rounded-lg border border-slate-700">
         ⚙️ 聯盟設定 / 編輯玩家與名單
@@ -38,17 +38,19 @@
         </div>
       </div>
 
-      <!-- 下拉選單快速加入球員區塊 -->
+      <!-- 智慧關鍵字自動補全輸入區塊 -->
       <div class="bg-slate-900/90 p-4 rounded-xl border border-slate-700/80">
-        <label class="block text-xs font-bold text-amber-400 mb-2">⚡ 快速加入球員（先選球隊 ➔ 自動篩選球員）</label>
+        <label class="block text-xs font-bold text-amber-400 mb-2">⚡ 智慧搜尋加入球員（輸入前幾個字母即可下拉選擇）</label>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
           <div>
-            <span class="text-[11px] text-slate-400 block mb-1">第一步：選擇 NBA 球隊</span>
-            <select id="nbaTeamPicker" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white"></select>
+            <span class="text-[11px] text-slate-400 block mb-1">球員名稱 (輸入 2~3 字即刻提示)</span>
+            <input type="text" id="playerSearchInput" list="playersDatalist" placeholder="例如輸入 luk 或 ant..." class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white focus:ring-1 focus:ring-amber-400 focus:outline-none">
+            <datalist id="playersDatalist"></datalist>
           </div>
           <div>
-            <span class="text-[11px] text-slate-400 block mb-1">第二步：選擇球隊內球員</span>
-            <select id="nbaPlayerPicker" class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white"></select>
+            <span class="text-[11px] text-slate-400 block mb-1">球隊簡寫 (輸入 1~2 字即刻提示)</span>
+            <input type="text" id="teamSearchInput" list="teamsDatalist" placeholder="例如輸入 da 或 go..." class="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-xs text-white focus:ring-1 focus:ring-amber-400 focus:outline-none">
+            <datalist id="teamsDatalist"></datalist>
           </div>
           <div class="flex items-end">
             <button id="addPlayerBtn" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-lg text-xs transition-colors flex justify-center items-center gap-1">
@@ -68,9 +70,8 @@
             💾 儲存隊伍名稱與名單
           </button>
         </div>
-        <!-- 標籤可視化卡片區 -->
         <div id="rosterTagsContainer" class="flex flex-wrap gap-1.5 p-3 bg-slate-900/60 border border-slate-700 rounded-lg min-h-[50px] mb-2"></div>
-        <textarea id="rosterInput" rows="5" placeholder="格式：球員英文全名 - 球隊簡寫&#10;Luka Doncic - DAL&#10;Victor Wembanyama - SAS" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs font-mono text-slate-200"></textarea>
+        <textarea id="rosterInput" rows="5" placeholder="格式：球員英文全名 - 球隊簡寫&#10;Luka Dončić - DAL&#10;Victor Wembanyama - SAS" class="w-full bg-slate-900 border border-slate-700 rounded-lg p-2.5 text-xs font-mono text-slate-200"></textarea>
       </div>
     </section>
 
@@ -127,43 +128,43 @@
 
   <script>
     // =========================================================================
-    // 0. NBA 30 支球隊與主要現役球員名單庫 (提供下拉選單挑選)
+    // 0. NBA 30 隊名單庫與自動補全資料庫 (取自 tw-nba.udn.com/nba/playerlist)
     // =========================================================================
     const NBA_TEAMS_ROSTERS = {
-      "ATL": { name: "老鷹 (Atlanta Hawks)", players: ["Trae Young", "Jalen Johnson", "Dyson Daniels", "Clint Capela", "De'Andre Hunter", "Bogdan Bogdanovic", "Onyeka Okongwu", "Zaccharie Risacher", "Larry Nance Jr."] },
-      "BOS": { name: "塞爾提克 (Boston Celtics)", players: ["Jayson Tatum", "Jaylen Brown", "Derrick White", "Jrue Holiday", "Kristaps Porzingis", "Al Horford", "Payton Pritchard", "Sam Hauser", "Luke Kornet"] },
-      "BKN": { name: "籃網 (Brooklyn Nets)", players: ["Cam Thomas", "Dennis Schroder", "Cameron Johnson", "Nic Claxton", "Dorian Finney-Smith", "Ben Simmons", "Noah Clowney", "Jalen Wilson", "Day'Ron Sharpe"] },
-      "CHA": { name: "黃蜂 (Charlotte Hornets)", players: ["LaMelo Ball", "Brandon Miller", "Miles Bridges", "Mark Williams", "Nick Richards", "Grant Williams", "Tre Mann", "Cody Martin", "Vasilije Micic"] },
-      "CHI": { name: "公牛 (Chicago Bulls)", players: ["Zach LaVine", "Nikola Vucevic", "Coby White", "Josh Giddey", "Patrick Williams", "Ayo Dosunmu", "Lonzo Ball", "Matas Buzelis", "Jalen Smith"] },
-      "CLE": { name: "騎士 (Cleveland Cavaliers)", players: ["Donovan Mitchell", "Darius Garland", "Evan Mobley", "Jarrett Allen", "Caris LeVert", "Max Strus", "Isaac Okoro", "Dean Wade", "Georges Niang"] },
-      "DAL": { name: "獨行俠 (Dallas Mavericks)", players: ["Luka Doncic", "Kyrie Irving", "Klay Thompson", "Dereck Lively II", "Daniel Gafford", "P.J. Washington", "Naji Marshall", "Quentin Grimes", "Spencer Dinwiddie"] },
-      "DEN": { name: "金塊 (Denver Nuggets)", players: ["Nikola Jokic", "Jamal Murray", "Michael Porter Jr.", "Aaron Gordon", "Christian Braun", "Russell Westbrook", "Peyton Watson", "Julian Strawther", "DeMar DeRozan"] },
-      "DET": { name: "活塞 (Detroit Pistons)", players: ["Cade Cunningham", "Jaden Ivey", "Tobias Harris", "Jalen Duren", "Tim Hardaway Jr.", "Malik Beasley", "Isaiah Stewart", "Ausar Thompson", "Simone Fontecchio"] },
-      "GSW": { name: "勇士 (Golden State Warriors)", players: ["Stephen Curry", "Jonathan Kuminga", "Draymond Green", "Buddy Hield", "Andrew Wiggins", "Brandin Podziemski", "De'Anthony Melton", "Moses Moody", "Kevon Looney"] },
-      "HOU": { name: "火箭 (Houston Rockets)", players: ["Alperen Sengun", "Jalen Green", "Fred VanVleet", "Jabari Smith Jr.", "Amen Thompson", "Tari Eason", "Dillon Brooks", "Steven Adams", "Reed Sheppard"] },
-      "IND": { name: "溜馬 (Indiana Pacers)", players: ["Tyrese Haliburton", "Pascal Siakam", "Myles Turner", "Bennedict Mathurin", "Andrew Nembhard", "Aaron Nesmith", "T.J. McConnell", "Obi Toppin", "Jarace Walker"] },
-      "LAC": { name: "快艇 (LA Clippers)", players: ["James Harden", "Kawhi Leonard", "Norman Powell", "Ivica Zubac", "Terance Mann", "Derrick Jones Jr.", "Kevin Porter Jr.", "Kris Dunn", "Amir Coffey"] },
-      "LAL": { name: "湖人 (LA Lakers)", players: ["Anthony Davis", "LeBron James", "Austin Reaves", "D'Angelo Russell", "Rui Hachimura", "Dalton Knecht", "Gabe Vincent", "Max Christie", "Jaxson Hayes"] },
-      "MEM": { name: "灰熊 (Memphis Grizzlies)", players: ["Ja Morant", "Jaren Jackson Jr.", "Desmond Bane", "Zach Edey", "Marcus Smart", "Santi Aldama", "Scotty Pippen Jr.", "Jaylen Wells", "Vince Williams Jr."] },
-      "MIA": { name: "熱火 (Miami Heat)", players: ["Bam Adebayo", "Jimmy Butler", "Tyler Herro", "Terry Rozier", "Jaime Jaquez Jr.", "Nikola Jovic", "Duncan Robinson", "Kel'el Ware", "Haywood Highsmith"] },
-      "MIL": { name: "公鹿 (Milwaukee Bucks)", players: ["Giannis Antetokounmpo", "Damian Lillard", "Khris Middleton", "Brook Lopez", "Bobby Portis", "Gary Trent Jr.", "Taurean Prince", "Delon Wright", "Pat Connaughton"] },
-      "MIN": { name: "灰狼 (Minnesota Timberwolves)", players: ["Anthony Edwards", "Julius Randle", "Rudy Gobert", "Jaden McDaniels", "Mike Conley", "Naz Reid", "Donte DiVincenzo", "Nickeil Alexander-Walker", "Rob Dillingham"] },
-      "NOP": { name: "鵜鶘 (New Orleans Pelicans)", players: ["Zion Williamson", "Brandon Ingram", "CJ McCollum", "Dejounte Murray", "Trey Murphy III", "Herbert Jones", "Yves Missi", "Jordan Hawkins", "Jose Alvarado"] },
-      "NYK": { name: "尼克 (New York Knicks)", players: ["Jalen Brunson", "Karl-Anthony Towns", "OG Anunoby", "Mikal Bridges", "Josh Hart", "Miles McBride", "Mitchell Robinson", "Precious Achiuwa", "Cameron Payne"] },
-      "OKC": { name: "雷霆 (Oklahoma City Thunder)", players: ["Shai Gilgeous-Alexander", "Chet Holmgren", "Jalen Williams", "Isaiah Hartenstein", "Alex Caruso", "Luguentz Dort", "Cason Wallace", "Aaron Wiggins", "Isaiah Joe"] },
-      "ORL": { name: "魔術 (Orlando Magic)", players: ["Paolo Banchero", "Franz Wagner", "Jalen Suggs", "Wendell Carter Jr.", "Kentavious Caldwell-Pope", "Moritz Wagner", "Cole Anthony", "Anthony Black", "Jonathan Isaac"] },
-      "PHI": { name: "七六人 (Philadelphia 76ers)", players: ["Joel Embiid", "Tyrese Maxey", "Paul George", "Kelly Oubre Jr.", "Caleb Martin", "Andre Drummond", "Kyle Lowry", "Guerschon Yabusele", "Jared McCain"] },
-      "PHX": { name: "太陽 (Phoenix Suns)", players: ["Kevin Durant", "Devin Booker", "Bradley Beal", "Jusuf Nurkic", "Tyus Jones", "Royce O'Neale", "Grayson Allen", "Mason Plumlee", "Ryan Dunn"] },
-      "POR": { name: "拓荒者 (Portland Trail Blazers)", players: ["Anfernee Simons", "Shaedon Sharpe", "Jerami Grant", "Deandre Ayton", "Deni Avdija", "Scoot Henderson", "Toumani Camara", "Donovan Clingan", "Robert Williams III"] },
-      "SAC": { name: "國王 (Sacramento Kings)", players: ["De'Aaron Fox", "Domantas Sabonis", "Keegan Murray", "Malik Monk", "Keon Ellis", "Kevin Huerter", "Trey Lyles", "Alex Len", "Doug McDermott"] },
-      "SAS": { name: "馬刺 (San Antonio Spurs)", players: ["Victor Wembanyama", "Chris Paul", "Devin Vassell", "Jeremy Sochan", "Stephon Castle", "Keldon Johnson", "Harrison Barnes", "Zach Collins", "Tre Jones"] },
-      "TOR": { name: "暴龍 (Toronto Raptors)", players: ["Scottie Barnes", "RJ Barrett", "Immanuel Quickley", "Jakob Poeltl", "Gradey Dick", "Ochai Agbaji", "Davion Mitchell", "Kelly Olynyk", "Chris Boucher"] },
-      "UTA": { name: "爵士 (Utah Jazz)", players: ["Lauri Markkanen", "Keyonte George", "Collin Sexton", "John Collins", "Walker Kessler", "Jordan Clarkson", "Taylor Hendricks", "Cody Williams", "Brice Sensabaugh"] },
-      "WAS": { name: "巫師 (Washington Wizards)", players: ["Jordan Poole", "Kyle Kuzma", "Alex Sarr", "Bilal Coulibaly", "Bub Carrington", "Malcolm Brogdon", "Jonas Valanciunas", "Corey Kispert", "Kyshawn George"] }
+      "ATL": { name: "亞特蘭大老鷹 (ATL)", players: ["Trae Young", "Jalen Johnson", "Dyson Daniels", "Zaccharie Risacher", "Clint Capela", "Onyeka Okongwu", "Bogdan Bogdanović", "De'Andre Hunter", "Larry Nance Jr.", "Kobe Bufkin", "Garrison Mathews", "David Roddy", "Vít Krejčí", "Dominick Barlow", "Keaton Wallace"] },
+      "BOS": { name: "波士頓塞爾蒂克 (BOS)", players: ["Jayson Tatum", "Jaylen Brown", "Derrick White", "Jrue Holiday", "Kristaps Porziņģis", "Al Horford", "Payton Pritchard", "Sam Hauser", "Luke Kornet", "Xavier Tillman", "Neemias Queta", "Jordan Walsh", "Baylor Scheierman", "Drew Peterson", "JD Davison"] },
+      "BKN": { name: "布魯克林籃網 (BKN)", players: ["Cam Thomas", "Dennis Schröder", "Cameron Johnson", "Nicolas Claxton", "Dorian Finney-Smith", "Ben Simmons", "Noah Clowney", "Jalen Wilson", "Day'Ron Sharpe", "Ziaire Williams", "Shake Milton", "Trendon Watford", "Keon Johnson", "Bojan Bogdanović"] },
+      "CHA": { name: "夏洛特黃蜂 (CHA)", players: ["LaMelo Ball", "Brandon Miller", "Miles Bridges", "Mark Williams", "Nick Richards", "Tre Mann", "Grant Williams", "Cody Martin", "Vasilije Micić", "Seth Curry", "Josh Green", "Tidjane Salaün", "Nick Smith Jr.", "Moussa Diabaté"] },
+      "CHI": { name: "芝加哥公牛 (CHI)", players: ["Zach LaVine", "Nikola Vučević", "Coby White", "Josh Giddey", "Patrick Williams", "Ayo Dosunmu", "Lonzo Ball", "Matas Buzelis", "Jalen Smith", "Torrey Craig", "Julian Phillips", "Dalen Terry", "Chris Duarte", "Adama Sanogo"] },
+      "CLE": { name: "克里夫蘭騎士 (CLE)", players: ["Donovan Mitchell", "Darius Garland", "Evan Mobley", "Jarrett Allen", "Caris LeVert", "Max Strus", "Isaac Okoro", "Dean Wade", "Georges Niang", "Ty Jerome", "Sam Merrill", "Craig Porter Jr.", "Tristan Thompson", "Jaylon Tyson"] },
+      "DAL": { name: "達拉斯獨行俠 (DAL)", players: ["Luka Dončić", "Kyrie Irving", "Klay Thompson", "Dereck Lively II", "Daniel Gafford", "P.J. Washington", "Naji Marshall", "Quentin Grimes", "Spencer Dinwiddie", "Jaden Hardy", "Maxi Kleber", "Dwight Powell", "Olivier-Maxence Prosper", "Markieff Morris"] },
+      "DEN": { name: "丹佛金塊 (DEN)", players: ["Nikola Jokić", "Jamal Murray", "Michael Porter Jr.", "Aaron Gordon", "Christian Braun", "Russell Westbrook", "Peyton Watson", "Julian Strawther", "DeMar DeRozan", "Dario Šarić", "Zeke Nnaji", "Hunter Tyson", "Vlatko Čančar", "Jalen Pickett"] },
+      "DET": { name: "底特律活塞 (DET)", players: ["Cade Cunningham", "Jaden Ivey", "Tobias Harris", "Jalen Duren", "Tim Hardaway Jr.", "Malik Beasley", "Isaiah Stewart", "Ausar Thompson", "Simone Fontecchio", "Ron Holland II", "Paul Reed", "Marcus Sasser", "Wendell Moore Jr.", "Bobi Klintman"] },
+      "GSW": { name: "金州勇士 (GSW)", players: ["Stephen Curry", "Jonathan Kuminga", "Draymond Green", "Buddy Hield", "Andrew Wiggins", "Brandin Podziemski", "De'Anthony Melton", "Moses Moody", "Kevon Looney", "Kyle Anderson", "Gary Payton II", "Trayce Jackson-Davis", "Lindy Waters III", "Gui Santos"] },
+      "HOU": { name: "休士頓火箭 (HOU)", players: ["Alperen Şengün", "Jalen Green", "Fred VanVleet", "Jabari Smith Jr.", "Amen Thompson", "Tari Eason", "Dillon Brooks", "Steven Adams", "Reed Sheppard", "Cam Whitmore", "Jock Landale", "Aaron Holiday", "Jeff Green", "Jae'Sean Tate"] },
+      "IND": { name: "印地安納溜馬 (IND)", players: ["Tyrese Haliburton", "Pascal Siakam", "Myles Turner", "Bennedict Mathurin", "Andrew Nembhard", "Aaron Nesmith", "T.J. McConnell", "Obi Toppin", "Jarace Walker", "Ben Sheppard", "Thomas Bryant", "James Wiseman", "Johnny Furphy"] },
+      "LAC": { name: "洛杉磯快艇 (LAC)", players: ["James Harden", "Kawhi Leonard", "Norman Powell", "Ivica Zubac", "Terance Mann", "Derrick Jones Jr.", "Kevin Porter Jr.", "Kris Dunn", "Amir Coffey", "Nicolas Batum", "Mo Bamba", "Kobe Brown", "Jordan Miller", "Cam Christie"] },
+      "LAL": { name: "洛杉磯湖人 (LAL)", players: ["Anthony Davis", "LeBron James", "Austin Reaves", "D'Angelo Russell", "Rui Hachimura", "Dalton Knecht", "Gabe Vincent", "Max Christie", "Jaxson Hayes", "Jarred Vanderbilt", "Christian Wood", "Cam Reddish", "Bronny James", "Jalen Hood-Schifino"] },
+      "MEM": { name: "曼斐斯灰熊 (MEM)", players: ["Ja Morant", "Jaren Jackson Jr.", "Desmond Bane", "Zach Edey", "Marcus Smart", "Santi Aldama", "Scotty Pippen Jr.", "Jaylen Wells", "Vince Williams Jr.", "Luke Kennard", "John Konchar", "GG Jackson", "Brandon Clarke", "Jay Huff"] },
+      "MIA": { name: "邁阿密熱火 (MIA)", players: ["Bam Adebayo", "Jimmy Butler", "Tyler Herro", "Terry Rozier", "Jaime Jaquez Jr.", "Nikola Jović", "Duncan Robinson", "Kel'el Ware", "Haywood Highsmith", "Kevin Love", "Josh Richardson", "Alec Burks", "Thomas Bryant", "Pelle Larsson"] },
+      "MIL": { name: "密爾瓦基公鹿 (MIL)", players: ["Giannis Antetokounmpo", "Damian Lillard", "Khris Middleton", "Brook Lopez", "Bobby Portis", "Gary Trent Jr.", "Taurean Prince", "Delon Wright", "Pat Connaughton", "AJ Green", "Andre Jackson Jr.", "MarJon Beauchamp", "AJ Johnson"] },
+      "MIN": { name: "明尼蘇達灰狼 (MIN)", players: ["Anthony Edwards", "Julius Randle", "Rudy Gobert", "Jaden McDaniels", "Mike Conley", "Naz Reid", "Donte DiVincenzo", "Nickeil Alexander-Walker", "Rob Dillingham", "Terrence Shannon Jr.", "Joe Ingles", "Josh Minott", "Luka Garza", "Leonard Miller"] },
+      "NOP": { name: "紐奧良鵜鶘 (NOP)", players: ["Zion Williamson", "Brandon Ingram", "CJ McCollum", "Dejounte Murray", "Trey Murphy III", "Herbert Jones", "Yves Missi", "Jordan Hawkins", "Jose Alvarado", "Daniel Theis", "Jeremiah Robinson-Earl", "Javonte Green", "Antonio Reeves"] },
+      "NYK": { name: "紐約尼克 (NYK)", players: ["Jalen Brunson", "Karl-Anthony Towns", "OG Anunoby", "Mikal Bridges", "Josh Hart", "Miles McBride", "Mitchell Robinson", "Precious Achiuwa", "Cameron Payne", "Landry Shamet", "Jericho Sims", "Tyler Kolek", "Pacôme Dadiet"] },
+      "OKC": { name: "奧克拉荷馬雷霆 (OKC)", players: ["Shai Gilgeous-Alexander", "Chet Holmgren", "Jalen Williams", "Isaiah Hartenstein", "Alex Caruso", "Luguentz Dort", "Cason Wallace", "Aaron Wiggins", "Isaiah Joe", "Jaylin Williams", "Kenrich Williams", "Ousmane Dieng", "Ajay Mitchell", "Dillon Jones"] },
+      "ORL": { name: "奧蘭多魔術 (ORL)", players: ["Paolo Banchero", "Franz Wagner", "Jalen Suggs", "Wendell Carter Jr.", "Kentavious Caldwell-Pope", "Moritz Wagner", "Cole Anthony", "Anthony Black", "Jonathan Isaac", "Goga Bitadze", "Gary Harris", "Tristan da Silva", "Jett Howard"] },
+      "PHI": { name: "費城76人 (PHI)", players: ["Joel Embiid", "Tyrese Maxey", "Paul George", "Kelly Oubre Jr.", "Caleb Martin", "Andre Drummond", "Kyle Lowry", "Guerschon Yabusele", "Jared McCain", "Eric Gordon", "Ricky Council IV", "KJ Martin", "Adem Bona", "Reggie Jackson"] },
+      "PHX": { name: "鳳凰城太陽 (PHX)", players: ["Kevin Durant", "Devin Booker", "Bradley Beal", "Jusuf Nurkić", "Tyus Jones", "Royce O'Neale", "Grayson Allen", "Mason Plumlee", "Ryan Dunn", "Monte Morris", "Oso Ighodaro", "Damion Lee", "Bol Bol", "Josh Okogie"] },
+      "POR": { name: "波特蘭拓荒者 (POR)", players: ["Anfernee Simons", "Shaedon Sharpe", "Jerami Grant", "Deandre Ayton", "Deni Avdija", "Scoot Henderson", "Toumani Camara", "Donovan Clingan", "Robert Williams III", "Jabari Walker", "Matisse Thybulle", "Kris Murray", "Dalano Banton", "Duop Reath"] },
+      "SAC": { name: "沙加緬度國王 (SAC)", players: ["De'Aaron Fox", "Domantas Sabonis", "Keegan Murray", "Malik Monk", "Keon Ellis", "Kevin Huerter", "Trey Lyles", "Alex Len", "Doug McDermott", "Devin Carter", "Jalen McDaniels", "Colby Jones", "Orlando Robinson", "Jordan McLaughlin"] },
+      "SAS": { name: "聖安東尼奧馬刺 (SAS)", players: ["Victor Wembanyama", "Chris Paul", "Devin Vassell", "Jeremy Sochan", "Stephon Castle", "Keldon Johnson", "Harrison Barnes", "Zach Collins", "Tre Jones", "Julian Champagnie", "Charles Bassey", "Blake Wesley", "Sandro Mamukelashvili", "Malaki Branham"] },
+      "TOR": { name: "多倫多暴龍 (TOR)", players: ["Scottie Barnes", "RJ Barrett", "Immanuel Quickley", "Jakob Poeltl", "Gradey Dick", "Ochai Agbaji", "Davion Mitchell", "Kelly Olynyk", "Chris Boucher", "Ja'Kobe Walter", "Jonathan Mogbo", "Jamal Shead", "Bruno Fernando", "Garrett Temple"] },
+      "UTA": { name: "猶他爵士 (UTA)", players: ["Lauri Markkanen", "Keyonte George", "Collin Sexton", "John Collins", "Walker Kessler", "Jordan Clarkson", "Taylor Hendricks", "Cody Williams", "Brice Sensabaugh", "Drew Eubanks", "Kyle Filipowski", "Svi Mykhailiuk", "Johnny Juzang", "Isaiah Collier"] },
+      "WAS": { name: "華盛頓巫師 (WAS)", players: ["Jordan Poole", "Kyle Kuzma", "Alex Sarr", "Bilal Coulibaly", "Bub Carrington", "Malcolm Brogdon", "Jonas Valančiūnas", "Corey Kispert", "Kyshawn George", "Richaun Holmes", "Marvin Bagley III", "Patrick Baldwin Jr.", "Anthony Gill", "Johnny Davis"] }
     };
 
     // =========================================================================
-    // 1. NBA 2026-27 球季常規賽全週次日程定義
+    // 1. NBA 2026-27 球季常規賽全週次日程定義 (美東時間 週一至週日)
     // =========================================================================
     const SEASON_START_MON = new Date("2026-10-19T00:00:00-04:00");
 
@@ -185,9 +186,10 @@
     });
 
     // =========================================================================
-    // 2. 官方賽程資料庫
+    // 2. 官方賽程資料庫 (按日期索引)
     // =========================================================================
     const FULL_NBA_SCHEDULE = {
+      // --- Week 1 (10/19 - 10/25) ---
       "2026-10-20": { "BOS": "@DET", "DET": "BOS", "MIN": "@LAL", "LAL": "MIN", "NYK": "BOS" },
       "2026-10-21": {
         "ATL": "@ORL", "ORL": "ATL", "CHA": "@BKN", "BKN": "CHA", "CHI": "@TOR", "TOR": "CHI",
@@ -212,6 +214,8 @@
         "GSW": "UTA", "UTA": "@SAC", "MEM": "@SAS", "SAS": "@POR", "POR": "SAS", "OKC": "@GSW",
         "PHI": "TOR", "TOR": "@PHI", "WAS": "@MIL", "MIL": "WAS"
       },
+
+      // --- Week 2 (10/26 - 11/01) ---
       "2026-10-26": { "BOS": "MIL", "MIL": "@BOS", "DAL": "UTA", "UTA": "@DAL", "DEN": "TOR", "TOR": "@DEN", "PHX": "LAL", "LAL": "@PHX" },
       "2026-10-27": { "BKN": "DEN", "DEN": "@BKN", "GSW": "NOP", "NOP": "@GSW", "MIN": "DAL", "DAL": "@MIN", "SAC": "POR", "POR": "@SAC" },
       "2026-10-28": {
@@ -226,14 +230,14 @@
         "LAL": "@TOR", "TOR": "LAL", "SAC": "@ATL", "ATL": "SAC"
       },
       "2026-10-31": { "MIA": "@WAS", "WAS": "MIA", "PHI": "MEM", "MEM": "@PHI", "MIL": "CLE", "CLE": "@MIL", "UTA": "@PHX", "PHX": "UTA" },
-      "2026-11-01": {
+      "2126-11-01": {
         "BKN": "DET", "DET": "@BKN", "DAL": "HOU", "HOU": "@DAL", "ATL": "SAC", "SAC": "@ATL",
         "ORL": "@NOP", "NOP": "ORL", "LAC": "PHX", "PHX": "@LAC"
       }
     };
 
     // =========================================================================
-    // 3. 矩陣計算引擎
+    // 3. 通用隊伍場次矩陣計算引擎
     // =========================================================================
     function getWeekDaysArray(monDate) {
       return Array.from({ length: 7 }, (_, i) => {
@@ -309,7 +313,7 @@
     }
 
     // =========================================================================
-    // 4. UI 邏輯與雙級下拉選單聯動
+    // 4. UI 互動與自動補全 (Autocomplete) 邏輯
     // =========================================================================
     const DEFAULT_TEAMS = Array.from({ length: 10 }, (_, i) => ({
       id: `team_${i + 1}`,
@@ -329,8 +333,10 @@
     const rosterCountBadge = document.getElementById('rosterCountBadge');
     const rosterTagsContainer = document.getElementById('rosterTagsContainer');
 
-    const nbaTeamPicker = document.getElementById('nbaTeamPicker');
-    const nbaPlayerPicker = document.getElementById('nbaPlayerPicker');
+    const playerSearchInput = document.getElementById('playerSearchInput');
+    const teamSearchInput = document.getElementById('teamSearchInput');
+    const playersDatalist = document.getElementById('playersDatalist');
+    const teamsDatalist = document.getElementById('teamsDatalist');
     const addPlayerBtn = document.getElementById('addPlayerBtn');
 
     const myTeamSelect = document.getElementById('myTeamSelect');
@@ -352,47 +358,90 @@
 
     toggleConfigBtn.addEventListener('click', () => configSection.classList.toggle('hidden'));
 
-    // 初始化球隊選單
-    function initTeamPickers() {
-      nbaTeamPicker.innerHTML = '';
+    // 初始化球隊與球員的 Datalist (供輸入時即時過濾補全)
+    function initAutocompleteDatalists() {
+      teamsDatalist.innerHTML = '';
+      playersDatalist.innerHTML = '';
+
+      // 建立球隊提示 (如 DAL, GSW, LAL...)
       Object.keys(NBA_TEAMS_ROSTERS).forEach(code => {
-        const opt = new Option(`${code} - ${NBA_TEAMS_ROSTERS[code].name}`, code);
-        nbaTeamPicker.add(opt);
+        const teamObj = NBA_TEAMS_ROSTERS[code];
+        const opt = document.createElement('option');
+        opt.value = code;
+        opt.label = `${code} - ${teamObj.name}`;
+        teamsDatalist.appendChild(opt);
       });
-      updatePlayerPicker();
-    }
 
-    // 球隊變更時，自動更新球員清單
-    function updatePlayerPicker() {
-      nbaPlayerPicker.innerHTML = '';
-      const selectedCode = nbaTeamPicker.value;
-      const teamData = NBA_TEAMS_ROSTERS[selectedCode];
-      if (teamData && teamData.players) {
-        teamData.players.forEach(p => {
-          nbaPlayerPicker.add(new Option(p, `${p} - ${selectedCode}`));
+      // 建立球員提示 (建立球員與其隊伍的映射)
+      Object.keys(NBA_TEAMS_ROSTERS).forEach(code => {
+        const teamObj = NBA_TEAMS_ROSTERS[code];
+        teamObj.players.forEach(pName => {
+          const opt = document.createElement('option');
+          opt.value = pName;
+          opt.label = `${pName} (${code})`;
+          playersDatalist.appendChild(opt);
         });
-      }
+      });
     }
 
-    nbaTeamPicker.addEventListener('change', updatePlayerPicker);
+    // 當使用者在球員框選取或輸入球員時，若能唯一對應隊伍，自動幫填球隊簡寫！
+    playerSearchInput.addEventListener('input', () => {
+      const val = playerSearchInput.value.trim();
+      for (const code of Object.keys(NBA_TEAMS_ROSTERS)) {
+        if (NBA_TEAMS_ROSTERS[code].players.includes(val)) {
+          teamSearchInput.value = code;
+          break;
+        }
+      }
+    });
 
     // 點擊「＋ 加入名單」
     addPlayerBtn.addEventListener('click', () => {
-      const val = nbaPlayerPicker.value;
-      if (!val) return;
+      const pName = playerSearchInput.value.trim();
+      let tCode = teamSearchInput.value.trim().toUpperCase();
 
+      if (!pName) {
+        alert("請輸入或選擇球員名稱！");
+        playerSearchInput.focus();
+        return;
+      }
+
+      if (!tCode) {
+        // 嘗試自動反查所屬隊伍
+        for (const code of Object.keys(NBA_TEAMS_ROSTERS)) {
+          if (NBA_TEAMS_ROSTERS[code].players.includes(pName)) {
+            tCode = code;
+            break;
+          }
+        }
+      }
+
+      if (!tCode) {
+        alert("請輸入球隊簡寫（例如：DAL、LAL、BOS）！");
+        teamSearchInput.focus();
+        return;
+      }
+
+      const formatted = `${pName} - ${tCode}`;
       let currentLines = rosterInput.value.split('\n').map(s => s.trim()).filter(Boolean);
-      if (currentLines.includes(val)) {
+
+      if (currentLines.some(line => line.toLowerCase().includes(pName.toLowerCase()))) {
         alert("此球員已在名單中！");
         return;
       }
+
       if (currentLines.length >= 14) {
         if (!confirm("目前名單已滿 14 人，確定要再加入嗎？")) return;
       }
 
-      currentLines.push(val);
+      currentLines.push(formatted);
       rosterInput.value = currentLines.join('\n');
       updateRosterUI();
+
+      // 清空輸入框方便繼續輸入下一位
+      playerSearchInput.value = '';
+      teamSearchInput.value = '';
+      playerSearchInput.focus();
     });
 
     // 更新名單標籤與計數器
@@ -402,7 +451,7 @@
       rosterTagsContainer.innerHTML = '';
 
       if (lines.length === 0) {
-        rosterTagsContainer.innerHTML = '<span class="text-xs text-slate-500 italic">目前名單尚無球員，請從上方選單加入或手動輸入。</span>';
+        rosterTagsContainer.innerHTML = '<span class="text-xs text-slate-500 italic">目前名單尚無球員，請從上方搜尋框輸入加入或手動貼上。</span>';
         return;
       }
 
@@ -512,7 +561,7 @@
       }
     });
 
-    initTeamPickers();
+    initAutocompleteDatalists();
     initWeeksDropdown();
     renderDropdowns();
 
